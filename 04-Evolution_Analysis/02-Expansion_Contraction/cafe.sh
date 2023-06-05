@@ -2,12 +2,12 @@
 #Andy
 #20th,Oct, 2022
 #ssh smp10
-#conda activate /vol3/agis/yanjianbin_group/zhuandong/opt/envs/cafe5
+#conda activate /path/envs/cafe5
 
 echo ==========Start at `date` ====================================================================
 
 #STEP1 Get tree.file
-R=/vol3/agis/yanjianbin_group/zhuandong/02-Cangulatus/03-Evolution_analysis/02-Phylogenetic_tree/CaA-orthfinder_data/Results_May09/02_Mcmctree/dict2
+R=/path/Mcmctree/dict2
 
 #grep -E -v "NEXUS|BEGIN|END" $R/FigTree.tre|sed -E -e "s/\[[^]]*\]//g" -e "s/[ \t]//g" -e "/^$/d" -e "s/UTREE/tree tree/" >tree.txt
 
