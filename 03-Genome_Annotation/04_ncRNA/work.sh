@@ -6,9 +6,9 @@
 #SBATCH --error=err_%J_work.sh
 #SBATCH --output=out_%J_work.sh
 
-#R=/home/zhuandong/02-Database/03-Rfam
-#ln -s /home/zhuandong/02-Database/03-Rfam/Rfam_anno.txt
-#ln -s /home/zhuandong/02-Database/03-Rfam/Rfam_anno-snRNA.txt
+R=/path/Rfam
+ln -s /path/Rfam_anno.txt
+ln -s /home/zhuandong/02-Database/03-Rfam/Rfam_anno-snRNA.txt
 
 #tRNA Annotation using tRNAscan
 #source /home/zhuandong/01-Biosoft/miniconda3/etc/profile.d/conda.sh
