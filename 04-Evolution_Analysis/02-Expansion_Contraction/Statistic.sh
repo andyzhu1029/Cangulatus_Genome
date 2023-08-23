@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 echo =========start at : `date` ===========================================================
-cat ../Gamma_family_results.txt |grep "y"|cut -f1 > p0.05.significant
+cat Gamma_family_results.txt |grep "y"|cut -f1 > p0.05.significant
 
 for id in 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34
 do
@@ -49,17 +49,6 @@ cp 32.txt ./node-value/"Osa<30>".txt
 cp 33.txt ./node-value/"<31>".txt
 cp 34.txt ./node-value/"<32>".txt
 
-grep -f 7.expanded.significant_OG.txt ../../../../Orthogroups.txt | sed "s/ /\n/g"|grep "CaA|CaA" |sort -k 1.8n |uniq > CaA.expanded.significant.genes.txt
-grep -f 7.contracted.significant_OG.txt ../../../../Orthogroups.txt | sed "s/ /\n/g"|grep "CaA|CaA" |sort -k 1.8n |uniq > CaA.contracted.significant.genes.txt
+grep -f 7.expanded.significant_OG.txt Orthogroups.txt | sed "s/ /\n/g"|grep "CaA|CaA" |sort -k 1.8n |uniq > CaA.expanded.significant.genes.txt
+grep -f 7.contracted.significant_OG.txt Orthogroups.txt | sed "s/ /\n/g"|grep "CaA|CaA" |sort -k 1.8n |uniq > CaA.contracted.significant.genes.txt
 echo =========end at : `date` ============================================================
-
-
-
-
-
-
-
-
-
-
-
