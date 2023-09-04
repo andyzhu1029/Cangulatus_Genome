@@ -12,7 +12,7 @@
 #conda activate /path/py3.8
 #conda info --envs
 
-#STEP 1.1: Database construction
+#STEP 1.1: Library construction using BuildDatabase
 BuildDatabase -name Cangulatus_B_database -engine ncbi Celastrus_angulatus_B_genome.fasta
 
 #STEP 1.2: Run RepeatModeler
