@@ -1,0 +1,2099 @@
+---
+title: "Cangulatus"
+author: "Andy"
+date: "2024-09-13"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,
+                      message = FALSE,
+                      warning = FALSE,
+                      eval = TRUE,
+                      cache = TRUE)
+```
+
+```{r}
+rm(list = ls())
+```
+
+
+#Library
+```{r}
+library(ggplot2)
+library(tidyr) #for %>%
+library(dplyr) #for select function
+library(ggridges)
+```
+
+```{r}
+
+data_folder <- "/Users/andy_zhu/Downloads/01-Recent_Tasks/01-AGIS/02-Cangulatus/"
+```
+
+#Genome Survey
+```{r}
+
+kmer_types <- c("17", "19", "21", "23")
+
+all_data <- data.frame()
+
+for (k in kmer_types) {
+  file_path <- paste0(data_folder, '00-Genome_Survey/', k, 'mer.histo')
+  tmp <- read.table(file_path)
+  tmp <- subset(tmp, V1 >= 5 & V1 <= 500)
+  tmp$Kmer <- paste0("k = ", k)
+  all_data <- rbind(all_data, tmp)
+}
+p <- ggplot(all_data, aes(x = V1, y = V2, color = Kmer)) + 
+  geom_line(size = 0.8) +
+  xlab("K-mer depth") + 
+  ylab("Number of distinct k-mers") +
+  coord_cartesian(ylim = c(0, 5e+06)) +
+  theme_bw() + # 使用 theme_bw 可以快速得到干净的背景
+  theme(
+    legend.position = c(0.7, 0.6), # 将图例移动到合适位置
+    legend.title = element_blank(),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.border = element_rect(colour = "black", fill=NA, size=1),
+    panel.background = element_blank()
+  )
+p
+write_excel(all_data, file = paste0(data_folder, "00-Genome_Survey/kmer_data.xlsx"), row.names = FALSE)
+```
+
+
+#Genome Evolution
+##1A)ks
+```{r}
+ks_data = read.table(paste0(data_folder,"/04-Evolution_Analysis/02-Synteny_Analysis/01-KaKs/merge_ks.txt"),header = T)
+
+#define a function that identify density plot peak
+densFindPeak <- function(x) {
+  td <- density(x,adjust = 1/2)
+  maxDens <- which.max(td$y)  #the position of the element which the maximal value in a vector.
+  list(x=td$x[maxDens],y=td$y[maxDens])
+}
+
+CanA_ks <- ks_data %>% filter(Species == 'CanA_CanA') %>% pull(Ks)
+
+CanA_ks_limit1 <- CanA_ks[CanA_ks >= 0 & CanA_ks <= 1]
+CanA_ks_peak1 = densFindPeak(CanA_ks_limit1)
+CanA_ks_peak1 #0.1981212
+
+CanA_ks_limit2 <- CanA_ks[CanA_ks >= 1 & CanA_ks <=2.5]
+CanA_ks_peak2 = densFindPeak(CanA_ks_limit2) #2.078022
+CanA_ks_peak2 #2.078022
+
+#Twi_Twi peak
+Twi_ks <- ks_data %>%  filter(species == 'Twi_Twi') %>% select(ks) 
+Twi_ks_limit1 <- Twi_ks$ks[Twi_ks$ks >= 0 & Twi_ks$ks <=1]
+Twi_ks_peak1 = densFindPeak(Twi_ks_limit1) #0.1595298
+
+
+#Rco_Rco peak
+Rco_ks <- ks_data %>%  filter(species == 'Rco_Rco') %>% select(ks) 
+Rco_ks_limit1 <-Rco_ks$ks[Rco_ks$ks >= 0 & Rco_ks$ks <=1]
+Rco_ks_peak1 = densFindPeak(Rco_ks_limit1) #0.8350758
+
+#Pti_Pti peak
+Pti_ks <- ks_data %>%  filter(species == 'Pti_Pti') %>% select(ks) 
+Pti_ks_limit1 <-Pti_ks$ks[Pti_ks$ks >= 0 & Pti_ks$ks <=1]
+Pti_ks_peak1 = densFindPeak(Pti_ks_limit1) #0.2299008
+
+#Vvi_Vvi peak
+Vvi_ks <- ks_data %>%  filter(species == 'Vvi_Vvi') %>% select(ks) 
+Vvi_ks_limit1 <-Vvi_ks$ks[Vvi_ks$ks >= 1.5 & Vvi_ks$ks <=2.5]
+Vvi_ks_peak1 = densFindPeak(Vvi_ks_limit1) #1.560698
+
+#CanA_Vvi peak
+CanA_Vvi_ks <- ks_data %>%  filter(species == 'CanA_Vvi') %>% select(ks) 
+CanA_Vvi_ks_limit1 <-CanA_Vvi_ks$ks[CanA_Vvi_ks$ks >= 1 & CanA_Vvi_ks$ks <=2]
+CanA_Vvi_ks_peak1 = densFindPeak(CanA_Vvi_ks_limit1) #1.38778
+
+#CanA_Twi
+CanA_Twi_ks <- ks_data %>%  filter(species == 'CanA_Twi') %>% select(ks) 
+CanA_Twi_ks_limit1 <- CanA_Twi_ks$ks[CanA_Twi_ks$ks >= 0 & CanA_Twi_ks$ks <=0.6]
+CanA_Twi_ks_peak1 = densFindPeak(CanA_Twi_ks_limit1) #0.07694491
+
+#CanA_Pti
+CanA_Pti_ks <- ks_data %>%  filter(species == 'CanA_Pti') %>% select(ks) 
+CanA_Pti_ks_limit1 <- CanA_Pti_ks$ks[CanA_Pti_ks$ks >= 0 & CanA_Pti_ks$ks <=0.6]
+CanA_Pti_ks_peak1 = densFindPeak(CanA_Pti_ks_limit1) #0.5819391
+
+#CanA_Rco
+CanA_Rco_ks <- ks_data %>%  filter(species == 'CanA_Rco') %>% select(ks) 
+CanA_Rco_ks_limit1 <- CanA_Rco_ks$ks[CanA_Rco_ks$ks >= 0 & CanA_Rco_ks$ks <=0.6]
+CanA_Rco_ks_peak1 = densFindPeak(CanA_Rco_ks_limit1) #0.552019
+
+######
+# 1. 您的函数保持不变（既然您倾向于这个版本）
+densFindPeak <- function(x) {
+  td <- density(x, adjust = 1/2)
+  maxDens <- which.max(td$y)
+  list(x=td$x[maxDens], y=td$y[maxDens])
+}
+
+# 2. Loop
+species_list <- c('CanA_CanA','Twi_Twi','Rco_Rco','Pti_Pti','Vvi_Vvi',
+                  'CanA_Twi','CanA_Pti','CanA_Rco','CanA_Vvi')
+
+peaks_list <- lapply(species_list, function(sp) {
+  sub_ks <- ks_data %>% filter(Species == sp) %>% pull(Ks)
+  
+  if (sp == 'CanA_CanA') {
+    # 核心修正：使用 $x 提取 Ks 值
+    p1 <- densFindPeak(sub_ks[sub_ks >= 0 & sub_ks <= 1])$x
+    p2 <- densFindPeak(sub_ks[sub_ks >= 1 & sub_ks <= 2.5])$x
+    # 此时 c(p1, p2) 是一个包含两个数字的向量，会生成 2 行数据
+    return(data.frame(Species = sp, peak = c(p1, p2)))
+  } else if (sp == 'Vvi_Vvi') {
+    p <- densFindPeak(sub_ks[sub_ks >= 1.5 & sub_ks <= 2.5])$x
+    return(data.frame(Species = sp, peak = p))
+  } else if (sp == 'CanA_Twi') {
+    p <- densFindPeak(sub_ks[sub_ks >= 0 & sub_ks <= 0.6])$x
+    return(data.frame(Species = sp, peak = p))
+  } else {
+    p <- densFindPeak(sub_ks[sub_ks >= 0 & sub_ks <= 1.5])$x
+    return(data.frame(Species = sp, peak = p))
+  }
+})
+
+# 3. 现在执行合并，所有数据框都统一为 2 列（Species, peak）
+peaks_df <- do.call(rbind, peaks_list)
+
+# 打印结果查看
+print(peaks_df)
+
+####
+## Ridges plot 山脊图
+#define level of species
+ks_data$species <- factor(ks_data$species,levels = c('CanA_CanA','Twi_Twi','Rco_Rco',
+                                                     'Pti_Pti','Vvi_Vvi','CanA_Twi',
+                                                     'CanA_Pti','CanA_Rco','CanA_Vvi'))
+
+ks_data %>% ggplot(aes(x=ks,y=species,fill = species)) + 
+  geom_density_ridges(scale = 3, bandwidth = 0.08, color = F) +
+  geom_vline(xintercept = 0.1981212, color = 'black', linetype = 'dashed') + 
+  #geom_vline(xintercept = 0.6235556, color = 'black', linetype = 'dashed') +
+  #geom_vline(xintercept = 0.1595298,color = 'black', linetype = 'dashed') +
+  #geom_vline(xintercept = 0.8350758,color = 'black', linetype = 'dashed') +
+  #geom_vline(xintercept = 0.2299008,color = 'black', linetype = 'dashed') +
+  geom_vline(xintercept = 2.078022,color = 'black', linetype = 'dashed') +
+  #geom_vline(xintercept = 1.38778,color = 'black', linetype = 'dashed') +
+  #geom_vline(xintercept = 0.07694491,color = 'black', linetype = 'dashed') +
+  #geom_vline(xintercept = 0.5819391,color = 'black', linetype = 'dashed') +
+  #geom_vline(xintercept = 0.552019,color = 'black', linetype = 'dashed') +
+  scale_x_continuous(limits =c(0,2.5),expand = c(0.015,0)) +
+  scale_y_discrete(expand = c(0.05,0)) + 
+  scale_fill_manual(values = c("#DC143C",'#B0C4DE', "#6495ED", "#FF8C00", '#2E8B57', "#FF6347", "#87CEFA", "#F4A460", '#3CB371')) +
+  guides(fill = FALSE) +
+  theme_classic() + 
+  theme_ridges(font_size = 13, grid = FALSE) +
+  theme(axis.title.y = element_blank()) #axis.title delete
+
+```
+
+##1B)Ks
+```{r}
+ks_data = read.table(paste0(data_folder,"/04-Evolution_Analysis/02-Synteny_Analysis/01-KaKs/merge_ks.txt"),header = T)
+
+densFindPeak <- function(x, bw = 0.5) {
+  x <- x[!is.na(x)] # 排除缺失值
+  if(length(x) < 2) return(NA)
+  # 使用密度函数计算分布曲线
+  td <- density(x, bw = bw)
+  # 找到 y 轴最大值对应的 x 轴坐标
+  maxDens <- which.max(td$y)
+  return(td$x[maxDens])
+}
+
+species_list <- c('CanA_CanA','Twi_Twi','Rco_Rco','Pti_Pti','Vvi_Vvi',
+                  'CanA_Twi','CanA_Pti','CanA_Rco','CanA_Vvi')
+
+# 4. 批量计算峰值
+peaks_list <- lapply(species_list, function(sp) {
+  # 注意：这里使用了 Species 和 Ks (与 header = T 后的列名一致)
+  sub_ks <- ks_data %>% filter(Species == sp) %>% pull(Ks)
+  
+  # 根据物种演化特征设定过滤区间
+  if (sp == 'CanA_CanA') {
+    # 查找近期 WGD 峰 (0-1) 和古老三倍化峰 (1-2.5)
+    p1 <- densFindPeak(sub_ks[sub_ks >= 0 & sub_ks <= 1])
+    p2 <- densFindPeak(sub_ks[sub_ks >= 1 & sub_ks <= 2.5])
+    return(data.frame(species = sp, peak = c(p1, p2)))
+  } else if (sp == 'Vvi_Vvi') {
+    # 葡萄通常只保留古老的 gamma 事件峰
+    p <- densFindPeak(sub_ks[sub_ks >= 1.5 & sub_ks <= 2.5])
+    return(data.frame(species = sp, peak = p))
+  } else if (sp == 'CanA_Twi') {
+    # 针对分化非常近期的物种，缩窄区间以精准定位
+    p <- densFindPeak(sub_ks[sub_ks >= 0 & sub_ks <= 0.6])
+    return(data.frame(species = sp, peak = p))
+  } else {
+    # 其他物种的分化或 WGD 峰通常在 0-1.5 之间
+    p <- densFindPeak(sub_ks[sub_ks >= 0 & sub_ks <= 1.5])
+    return(data.frame(species = sp, peak = p))
+  }
+})
+
+# 合并结果为绘图所需的数据框
+peaks_df <- do.call(rbind, peaks_list)
+
+# 打印结果查看
+print(peaks_df)
+
+peaks_df <- data.frame(
+  Species = c('CanA_CanA', 'CanA_CanA'),
+  peak = c(0.2247, 2.0891),
+  label = c("Recent WGT", "Gamma event")
+)
+
+peaks_df <- data.frame(
+  Species = c('CanA_CanA', 'CanA_CanA'),
+  peak = c(0.2131514, 1.8716905),
+  label = c("Recent WGT", "Gamma event")
+)
+# 3. 设置物种顺序
+#species_order <- c('CanA_Vvi','CanA_Rco', 'CanA_Pti','CanA_Twi','Rco_Rco', 'Pti_Pti', 'Vvi_Vvi','Twi_Twi','CanA_CanA')
+species_order <- c('CanA_CanA', 'Twi_Twi', 'Rco_Rco', 'Pti_Pti', 'Vvi_Vvi', 
+                   'CanA_Twi', 'CanA_Pti', 'CanA_Rco', 'CanA_Vvi')
+
+ks_data$Species <- factor(ks_data$Species, levels = species_order)
+peaks_df$Species <- factor(peaks_df$Species, levels =species_order)
+
+# 4. 绘图
+ggplot(ks_data, aes(x = Ks, y = Species, fill = Species)) +
+  geom_density_ridges(scale = 2.5, bandwidth = 0.08, color=NA,alpha = 0.9) +
+  
+  # 自动映射 CanA_CanA 的虚线
+  geom_vline(data = peaks_df, aes(xintercept = peak), 
+             color = "black", linetype = "dashed", size = 0.5) +
+  
+  # 修正：y 映射现在可以找到 'Species' 了
+  geom_text(data = peaks_df, aes(x = peak, y = Species, label = label), 
+            vjust = -1, hjust = -0.1, size = 3.5, fontface = "bold.italic") +
+
+  scale_x_continuous(limits = c(0, 2.5), expand = c(0.01, 0), name = "Ks value") +
+  scale_fill_manual(values = c("red",'purple', "#6495ED", "#FF8C00", '#2E8B57', 
+                               "#FF6347", "#87CEFA", "#F4A460", '#3CB371')) +
+  theme_ridges(font_size = 12, grid = FALSE) +
+  theme_classic() +
+  theme(
+    axis.title.y = element_blank(),
+    axis.line.y = element_blank(),
+    legend.position = "none"
+  )
+
+#####################
+species_order <- c('CanA_CanA', 'Twi_Twi', 'Rco_Rco', 'Pti_Pti', 'Vvi_Vvi', 
+                   'CanA_Twi', 'CanA_Pti', 'CanA_Rco', 'CanA_Vvi')
+
+# 将 species 转换为 factor 并反转顺序（因为 ridges 自下而上堆叠）
+ks_data$Species <- factor(ks_data$Species, levels = rev(species_order))
+peaks_df$species <- factor(peaks_df$species, levels = rev(species_order))
+
+# 4. 开始绘图
+ggplot(ks_data, aes(x = Ks, y = Species, fill = Species)) +
+  # 绘制山脊线，bandwidth=0.08 确保平滑度与峰值计算一致
+  geom_density_ridges(scale = 3, bandwidth = 0.08, color = "white", alpha = 0.8) +
+  
+  # 自动映射计算出的峰值虚线
+  geom_vline(data = peaks_df, aes(xintercept = peak), 
+             color = "black", linetype = "dashed", size = 0.4) +
+  
+  # 设置坐标轴范围与比例
+  scale_x_continuous(limits = c(0, 2.5), expand = c(0.01, 0), name = "Ks value") +
+  
+  # 自定义颜色配色方案
+  scale_fill_manual(values = c("#3CB371", "#F4A460", "#87CEFA", "#FF6347", 
+                               "#2E8B57", "#FF8C00", "#6495ED", "#B0C4DE", "#DC143C")) +
+  
+  # 调整主题细节
+  theme_ridges(font_size = 12, grid = FALSE) +
+  theme_classic() +
+  theme(
+    axis.title.y = element_blank(),
+    axis.text.y = element_text(vjust = 0),
+    legend.position = "none"
+  )
+
+# 创建统一的函数来获取Ks峰值
+get_ks_peaks <- function(species_name, ks_data, ks_ranges = list(c(0, 1))) {
+  result <- list()
+  
+  # 筛选物种数据
+  species_ks <- ks_data %>% 
+    filter(species == species_name) %>% 
+    pull(ks)
+  
+  if(length(species_ks) == 0) {
+    warning(paste("No data found for species:", species_name))
+    return(NULL)
+  }
+  
+  # 为每个Ks范围计算峰值
+  for(i in seq_along(ks_ranges)) {
+    range <- ks_ranges[[i]]
+    ks_subset <- species_ks[species_ks >= range[1] & species_ks <= range[2]]
+    
+    if(length(ks_subset) > 1) {
+      peak <- densFindPeak(ks_subset)
+      result[[paste0("peak", i)]] <- peak$x
+    } else {
+      result[[paste0("peak", i)]] <- NA
+    }
+  }
+  
+  return(result)
+}
+
+# 设置物种和对应的Ks范围
+species_config <- list(
+  'CanA_CanA' = list(ranges = list(c(0, 1), c(1, 2.5))),
+  'Twi_Twi' = list(ranges = list(c(0, 1))),
+  'Rco_Rco' = list(ranges = list(c(0, 1))),
+  'Pti_Pti' = list(ranges = list(c(0, 1))),
+  'Vvi_Vvi' = list(ranges = list(c(1.5, 2.5))),
+  'CanA_Vvi' = list(ranges = list(c(1, 2))),
+  'CanA_Twi' = list(ranges = list(c(0, 0.6))),
+  'CanA_Pti' = list(ranges = list(c(0, 0.6))),
+  'CanA_Rco' = list(ranges = list(c(0, 0.6)))
+)
+
+# 批量计算所有峰值并存储
+all_peaks <- list()
+
+for(sp in names(species_config)) {
+  peaks <- get_ks_peaks(sp, ks_data, species_config[[sp]]$ranges)
+  all_peaks[[sp]] <- peaks
+}
+
+# 创建一个数据框存储所有峰值（用于自动绘制竖线）
+peak_df <- data.frame()
+for(sp in names(all_peaks)) {
+  for(peak_name in names(all_peaks[[sp]])) {
+    peak_value <- all_peaks[[sp]][[peak_name]]
+    if(!is.na(peak_value)) {
+      peak_df <- rbind(peak_df, data.frame(
+        species = sp,
+        peak_name = peak_name,
+        peak_value = peak_value
+      ))
+    }
+  }
+}
+
+# 打印峰值结果
+print("Ks峰值计算结果：")
+for(sp in names(all_peaks)) {
+  cat(paste("\n", sp, ":\n"))
+  print(unlist(all_peaks[[sp]]))
+}
+
+# 设置物种顺序
+ks_data$species <- factor(ks_data$species, 
+                         levels = c('CanA_CanA', 'Twi_Twi', 'Rco_Rco',
+                                    'Pti_Pti', 'Vvi_Vvi', 'CanA_Twi',
+                                    'CanA_Pti', 'CanA_Rco', 'CanA_Vvi'))
+
+# 颜色设置
+species_colors <- c(
+  "CanA_CanA" = "#DC143C",
+  "Twi_Twi" = 'purple',
+  "Rco_Rco" = "#6495ED",
+  "Pti_Pti" = "#FF8C00",
+  "Vvi_Vvi" = '#2E8B57',
+  "CanA_Twi" = "#FF6347",
+  "CanA_Pti" = "#87CEFA",
+  "CanA_Rco" = "#F4A460",
+  "CanA_Vvi" = '#3CB371'
+)
+
+# 绘制山脊图 - 自动添加峰值竖线
+p <- ks_data %>% 
+  ggplot(aes(x = ks, y = species, fill = species)) + 
+  geom_density_ridges(scale = 3, bandwidth = 0.08, color = F, alpha = 0.8) +
+  scale_x_continuous(limits = c(0, 2.5), expand = c(0.015, 0)) +
+  scale_y_discrete(expand = c(0.05, 0)) + 
+  scale_fill_manual(values = species_colors) +
+  guides(fill = "none") +
+  theme_classic() +
+  theme_ridges(font_size = 13, grid = FALSE) +
+  theme(
+    axis.title.y = element_blank(),
+    axis.title.x = element_text(size = 12),
+    axis.text = element_text(size = 10)
+  ) +
+  xlab("Ks (Synonymous Substitution Rate)")
+
+# 自动添加所有峰值竖线
+for(i in 1:nrow(peak_df)) {
+  p <- p + geom_vline(xintercept = peak_df$peak_value[i], 
+                     color = "black", 
+                     linetype = "dashed",
+                     alpha = 0.5,
+                     size = 0.5)
+}
+
+# 显示图表
+print(p)
+
+# 可选：保存图表
+# ggsave("ks_distribution_plot.pdf", p, width = 10, height = 8)
+# ggsave("ks_distribution_plot.png", p, width = 10, height = 8, dpi = 300)
+```
+
+#Stacked Bar
+```{r}
+rm(list = ls())
+setwd("/Users/andy_zhu/Downloads/01-Recent_Tasks/01-AGIS/02-Cangulatus/04-Evolution_Analysis/04-Phylogenetic_Analysis/01-OG")
+#BiocManager::install("ggpubr")
+library(ggplot2)
+library("ggpubr")
+dat <- read.table('Species_Statistics.txt', head = T, sep ='\t')
+dat
+#define the order of 
+type <- factor(dat$feature,levels = c('Unclustered-genes','Unique paralogs','Multiple-copy-orthologs','Single-copy-orthologs'))
+type
+p <- ggplot(dat, aes(x=species, y=counts, fill=type)) +
+     geom_bar(stat = "identity", width = 0.6, position = "stack")+
+     scale_fill_manual(values =c("orange","#00FF00","red","blue"))+
+     labs(x="",y="")+
+     coord_cartesian(ylim = c(0,60000)) + 
+    scale_y_continuous(breaks = c(0,60000,5000))+
+     theme(axis.text.x = element_text(angle = 70, hjust = 1), #X轴文本设置
+           axis.ticks.length.y = unit(0.15,'cm'), 
+           axis.ticks.length.x = unit(0.15,'cm'), #
+           legend.position = c(0.8,0.8),  #show legend
+          panel.grid.major = element_blank(),panel.grid.minor = element_blank(),#
+          axis.line = element_line(size = 1, colour = "black"), #
+          text = element_text(size = 14, family = "serif") ,#
+          panel.background = element_blank()) + 
+ #   scale_y_continuous(breaks = seq(0,120000,10000),expand = c(0,0))+ #????Y???̶ȣ?ȥ????X????϶
+    scale_y_continuous(expand = c(0,0)) #坐标延伸，确保图形元素覆盖至坐标轴
+p       
+ggsave('./stacked_bar.pdf',p,width = 10,height = 8)        #)+ 
+#+ geom_text(aes(label = counts),position = position_stack(vjust = 0.5),size =5) #????????ͼ?ı?
+  #theme_bw()  
+
+#====================================================================================
+p2 <- ggplot(dat, aes(x=species, y=counts, fill=feature)) +
+  geom_bar(stat = "identity", width = 0.6, position = "stack")+
+  scale_fill_manual(values =c("#00FF00","orange","red","blue","#800080"))+
+  labs(x=NULL,y=NULL,fill = NULL)+
+  theme(axis.text.x = element_blank(),axis.ticks.x = element_blank())+ 
+  coord_cartesian(ylim = c(70000,125000)) + #
+  scale_y_continuous(breaks = c(70000,120000,10000))+
+  theme(panel.grid.major = element_blank(),panel.grid.minor = element_blank(),#
+        axis.line = element_line(size = 1, colour = "black")) #
+        #text = element_text(size = 14, family = "serif") )#
+p2 
+
+ggarrange(p2,p1,heights = c(1/2, 1/2),ncol = 1, nrow =2,common.legend = TRUE, align = "v")
+
+```
+
+
+##2)Gene Family
+```{r}
+# BiocManager::install("ggtree")
+# BiocManager::install("ggnewscale")
+# BiocManager::install("ggtreeExtra")
+library(ggtree)
+library(ggnewscale)
+library(ggtreeExtra)
+
+RNAexpr <- read.csv('/Users/andy_zhu/Downloads/01-Recent_Tasks/01-AGIS/02-Cangulatus/04-Evolution_Analysis/01-GeneFam/02-TPS/01-Phylogenetic_Tree/CanA_fpkm.csv')
+
+tps_lst = read.csv('/Users/andy_zhu/Downloads/01-Recent_Tasks/01-AGIS/02-Cangulatus/04-Evolution_Analysis/01-GeneFam/02-TPS/01-Phylogenetic_Tree/tps_genes_expression.csv',header = T,sep=',')
+
+idx = which(RNAexpr$Gene_ID %in% tps_lst$ID)
+RNAexpr <- RNAexpr[idx,]
+
+RNAexpr$Flower1 <- rowMeans(RNAexpr[ , c(2, 3)], na.rm=TRUE)
+RNAexpr$Flower2 <- rowMeans(RNAexpr[ , c(4, 5)], na.rm=TRUE)
+RNAexpr$Flower3 <- rowMeans(RNAexpr[ , c(6, 7)], na.rm=TRUE)
+#RNAexpr$Flower <- rowMeans(RNAexpr[ , 2:7], na.rm=TRUE)
+
+RNAexpr$Leaf1 <- rowMeans(RNAexpr[ , c(8, 9)], na.rm=TRUE)
+RNAexpr$Leaf2 <- rowMeans(RNAexpr[ , c(10, 11)], na.rm=TRUE)
+RNAexpr$Leaf3 <- rowMeans(RNAexpr[ , c(13, 14)], na.rm=TRUE)
+#RNAexpr$Leaf <- rowMeans(RNAexpr[ , c(8:11,13,14)], na.rm=TRUE)
+
+RNAexpr$Root1 <- rowMeans(RNAexpr[ , c(15, 16)], na.rm=TRUE)
+RNAexpr$Root2 <- RNAexpr[ , 17]
+RNAexpr$Root3 <- rowMeans(RNAexpr[ , c(18, 19)], na.rm=TRUE)
+#RNAexpr$Root <- rowMeans(RNAexpr[ , 15:19], na.rm=TRUE)
+
+#RNAexpr$Stem <- rowMeans(RNAexpr[ , c(20, 21)], na.rm=TRUE)
+
+RNAexpr = RNAexpr[,c(-2:-19)]
+
+rownames(RNAexpr) <- RNAexpr$Gene_ID
+expr_dat <- log2(RNAexpr[,-1]+1)
+
+CaTPS_tree <- read.tree("/Users/andy_zhu/Downloads/01-Recent_Tasks/01-AGIS/02-Cangulatus/04-Evolution_Analysis/01-GeneFam/02-TPS/01-Phylogenetic_Tree/RAxML_bestTree.CaATPS-Tree")
+
+p<- ggtree(CaTPS_tree,layout = "circular",size=0.1,branch.length = "none")+
+  geom_tiplab(align = T,size=2)
+
+p2 <-gheatmap(p,
+              expr_dat,
+              offset = 6,
+              width = 1.5,
+              colnames_angle = 95,
+              legend_title = "log2(FPKM)",
+              high="#D32F2F",low = "#FFF7F3",
+              font.size = 2)
+p2
+```
+
+
+#Transcript_Analysis
+
+##KEGG_Enrich
+```{r eval=FALSE}
+rm(list=ls())
+#setwd("/Users/andy_zhu/Downloads/01-Recent_Tasks/01-AGIS/02-Cangulatus/04-Evolution_analysis/05-Duplication/")
+setwd('/Users/andy_zhu/Downloads/01-Recent_Tasks/01-AGIS/02-Cangulatus/04-Evolution_Analysis/04-Phylogenetic_Analysis/02-Expansion')
+library(ggplot2)
+
+goinput<-read.csv("CaA.expanded.significant.genes_KEGG.csv",sep= ",", header = T)
+goinput$Rich.factor=goinput$intersection_size/goinput$term_size
+
+x = goinput$Rich.factor
+#reorder() function to reorder the term_name according to the values in each Rich.factor
+y = reorder(factor(goinput$term_name,levels = goinput$term_name),
+                    goinput$Rich.factor)   
+
+p = ggplot(goinput, aes(x, y)) + geom_point(aes(size=intersection_size,color=adjusted_p_value))+  
+  scale_color_gradient(low = "red", high = "blue") +   #creates a two color gradient (low-high)
+  scale_radius(range = c(10,20))+  #set radius of circles  
+  guides(color= guide_colorbar(order = 2),size=guide_legend(order=1))+
+  labs(color=expression("P value"), 
+       size="Gene Number",
+       x="Rich factor",
+       y="KEGG pathway",
+       #title=module
+  ) + 
+  theme_bw() +
+  theme(
+  legend.title = element_text(size=20)) +        
+  theme(legend.text = element_text(size=15)) +   
+  theme(legend.key.size = unit(60, "pt")         
+        #  #legend.key.height = unit(35, "pt"),
+        #legend.key.width = unit(55, "pt")
+        )+
+  theme(axis.text.x = element_text(colour = "black",
+                                   size = 20, vjust =1 ),      #x????ע??????С
+         axis.text.y = element_text(colour = "black",
+                                   size = 20, hjust =1 ),      #y????ע??????С
+        axis.title.x = element_text(margin=margin(10, 5, 0, 0),
+                                  color = "black",size = 30),  #xy??????С
+        axis.title.y = element_text(angle=90))   
+
+
+ggsave(p,filename = "KEGG.pdf", width = 16,height = 16,dpi = 300)
+```
+
+##PCA
+```{r eval=FALSE}
+#install.packages('devtools')
+library(devtools)
+# options(repos = c(
+#     fawda123 = 'https://fawda123.r-universe.dev',
+#     CRAN = 'https://cloud.r-project.org'))
+# 
+# # Install ggord
+# install.packages('ggord')
+library(ggord)
+library(ggplot2)
+# Enable the r-universe repo
+#=========================方法1=====================================================================
+FPKM_data = read.csv(file='/Users/andy_zhu/Downloads/01-Recent_Tasks/01-AGIS/02-Cangulatus/06-Transcript_Analysis/01-PCA/CanA_fpkm.csv',header = T,sep = ',',check.names = F,comment.char = "",row.names = 1) #特殊符号
+#TPM_data = read.csv(file = 'CaA_TPM_matrix.csv',header = T, sep = ',',check.names = F,comment.char = "",row.names = 1)
+#c_data = FPKM_data[ ,1:20]
+c_data = FPKM_data[ ,1:20]
+raw_data = t(as.matrix(c_data)) #将表达量总表反转，PCA函数计算的是展示的第一列ID
+class(raw_data)  #matrix
+str(raw_data)
+
+pca_group <- factor(c(rep('Flower_1',2),rep('Flower_2',2),rep('Flower_3',2),rep('Leaf_1',2),rep('Leaf_2',2),rep('Leaf_3',1),rep('Leaf_4',2),rep('Root_1',2),rep('Root_2',1),rep('Root_3',2),rep('Stem_2',1),rep('Stem_2',1)))
+pac_group1 <- factor(c(rep('Flower',6),rep('Leaf',7),rep('Root',5),rep('Stem',2)))#分组
+
+pca_data = prcomp(raw_data) #prcomp是R自带的pca分析函数
+pcam.sum = summary(pca_data)
+p <- ggord(pca_data,
+           grp_in = pac_group1,
+           arrow=0,
+           vec_ext=0,
+           txt =NULL,
+           ellipse_pro=0.85,
+           vec_lab=TRUE)+
+  theme_bw() 
+#在ggord参数中加poly = FALSE椭圆无背景;ellipse=F无椭圆;ellipse_pro=置信区间，决定椭圆囊括的大小hull=T椭圆内有菱形
+#obslab=TRUE加样品名
+p
+?ggord
+##########################方法2######################################
+pca.sum_1<-as.data.frame(pcam.sum$x)
+pca.sum_1$group_1 <-c("Flower_1-1","Flower_1-2","Flower_2-1","Flower_2-2","Flower_3-1","Flower_3-2","Leaf_1-1","Leaf_1-2","Leaf_2-1","Leaf_2-2","Leaf_3-1","Leaf_4-1","Leaf_4-2","Root_1-1","Root_1-2","Root_2-1","Root_3-1","Root_3-2","Stem_1","Stem_2")
+ggplot(pca.sum_1, aes(x=PC1,y=PC2,colour=group_1))+geom_point(size=4)+theme_bw() 
+write.table(pca_data,"datra",quote = F, sep = "\t")
+pca_data = data.frame()
+head(pca_data)
+probesetvar = apply(pca_data,1,var)
+write.table(probesetvar,"probesetvar",quote = F, sep = "\t")
+head(probesetvar)
+ord <- prcomp(pca_data[, 1:6]) 
+head (ord)l
+p <- ggord(ord,pca_data$transcript_id, cols = )
+p
+qplot(PCA1,PCA2,data=ord,colour=factor(type))+theme_classic()
+plot(pca_data$PCA1,pca_data$PCA2,type="p",col=factor(pca_data$type))
+
+```
+
+
+#Differential Gene Expression Analysis
+###DEseq2
+```{r}
+############################## STEP 1:数据的载入和准备 ##########################################
+#BiocManager::install("DESeq2")
+library(DESeq2)
+
+countData <- read.csv("/Users/andy_zhu/Downloads/01-Recent_Tasks/01-AGIS/02-Cangulatus/06-Transcript_Analysis/02-DESeq/A-gene_count.csv",sep=",",header = T) #gene expression datafile
+
+countData$Flower1 <- rowMeans(countData[ , c(2, 3)], na.rm=TRUE)
+countData$Flower2 <- rowMeans(countData[ , c(4, 5)], na.rm=TRUE)
+countData$Flower3 <- rowMeans(countData[ , c(6, 7)], na.rm=TRUE)
+
+countData$Leaf1 <- rowMeans(countData[ , c(8, 9)], na.rm=TRUE)
+countData$Leaf2 <- rowMeans(countData[ , c(10, 11)], na.rm=TRUE)
+countData$Leaf3 <- rowMeans(countData[ , c(13, 14)], na.rm=TRUE)
+
+countData$Root1 <- rowMeans(countData[ , c(15, 16)], na.rm=TRUE)
+countData$Root2 <- countData[ , 17]
+countData$Root3 <- rowMeans(countData[ , c(18, 19)], na.rm=TRUE)
+
+countData = countData[,c(-2:-19)]
+
+rownames(countData)<-countData[,1]
+
+countData<-countData[,-1]
+
+samplename <- factor(c(rep("Stem",2),
+                       rep("Flower",3),
+                       rep("Leaf",3),
+                       rep("Root",3)
+                       ),
+                     levels = c("Stem",
+                                "Flower",
+                                "Leaf",
+                                "Root"
+                                )
+                     )
+
+#batch <- factor(c(rep()))#设置去批次效应的变量
+colData <- data.frame(row.names = colnames(countData),samplename) #添加去批次效应的变量batch
+colData
+head(countData)
+samplename
+
+#Create DESeqDataSet Object#查看去批次效应的变量
+dds <- DESeqDataSetFromMatrix(round(countData), 
+                              colData, 
+                              design = ~ samplename)  #添加去批次效应的变量batch
+keep <- rowSums(counts(dds) >= 10) >= 2  
+#the gene has counts >=10 in 2 or more samples;
+#reduce noise or false positive
+#reduce the memory size of the dds data objective
+#increase the speed of count modeling with DESeq2
+#improve visualization
+#keep <- rowSums(counts(dds)) >= 10       
+dds <- dds[keep, ]
+
+
+##############################STEP 2:主成分分析#########################################
+#Remove batch effect using vst transformation (rlog for small sample sizes <30; vst for samples >30) 
+vsdata <- vst(dds, blind=FALSE) 
+#Remove batch effect;'batch' is a design variable
+assay(vsdata) <- limma::removeBatchEffect(assay(vsdata), vsdata$batch) 
+
+p <-plotPCA(vsdata, intgroup = "samplename",returnData = T)
+p
+
+pcaData <-plotPCA(vsdata, intgroup=c("samplename"),returnData = T)
+pcaData <- pcaData[order(pcaData$samplename,decreasing=F),]
+table(pcaData$samplename)
+palette()
+colors()
+#Plot the PCA data (PC1 vs. PC2), with custom colors for each sample group
+plot(pcaData[,1:2],
+     pch = 19,
+     col= c(rep("gray",2), #stem samples
+            rep("red",3), # Flower 
+            rep("green3",3), # Leaf
+            rep("cyan",3)) #root
+     )
+                  
+text(pcaData[,1],pcaData[,2],row.names(pcaData),cex = c(0.5,0.5), font = 1)
+
+#根据PCAplot.pdf和returnData 去除生物学重复之间距离较远的样本######################
+
+#############  STEP 3: Differential Gene Expression Analysis ###############################
+
+#dds_norm <- DESeq(dds)
+dds_norm <- DESeq(dds, minReplicatesForReplace = Inf) #normalized counts without  replacing any potential outlier values不剔除outliers; 与cookscutoff作用相同.该参数当离群值占比较大，数量较多时使用，具体见印象笔记。
+res <- results(dds_norm)
+res
+############################ STEP 3.1:库克距离判断离群值 ######################################
+p <- boxplot(log10(assays(dds_norm)[["cooks"]]), range=0, las=2,outline=TRUE)
+p
+dev.off()
+
+####################    STEP 4:创建并切换到要比较样本的工作目录         ############################
+comparisons <- combn(levels(colData$samplename), 2, simplify = FALSE)
+results_list <- list()
+
+for (i in seq_along(comparisons)) {
+  tissue1 <- comparisons[[i]][1]
+  tissue2 <- comparisons[[i]][2]
+  res <- results(dds_norm, contrast = c("samplename", tissue2, tissue1))
+  #dds_norm$comparison_group <- factor(dds_norm$samplename,levels = c(tissue1,tissue2))
+  #res <- results(dds_norm, contrast = c("comparison_group", tissue2, tissue1))
+  res_filtered <- res[which(abs(res$log2FoldChange) > 2 & res$padj < 0.05), ]
+  
+  comparison_name <- paste(tissue1, "vs", tissue2, sep = "_")
+  results_list[[comparison_name]] <- res_filtered
+  cat("Comparison done:", tissue1, "vs", tissue2, "\n")
+}
+
+degs_lists <- lapply(results_list, function(res) {
+  # Extract gene identifiers where the adjusted p-value < 0.05
+  rownames(res[which(res$padj < 0.05), ])
+})
+
+all_degs <- unlist(degs_lists)
+
+length(all_degs)
+unique_degs <- unique(all_degs)
+length(unique_degs)
+
+
+summary(res)
+  
+#########################################################################################################
+#########################                                              ##################################
+#########################           STEP 5:筛选差异表达基因            ##################################
+#########################                                              ##################################
+#########################################################################################################
+
+#resOrdered <- res[order(res$pvalue), ] #排序,使用后，后面数据使用resOrdered。
+aa=sum(res$padj<0.05 & res$log2FoldChange  > 1.5 , na.rm = TRUE)
+bb=sum(res$padj<0.05 & res$log2FoldChange  < -1.5, na.rm = TRUE)
+cc=sum(res$padj<0.05 & abs(res$log2FoldChange)  > 1.5, na.rm = TRUE)
+dd=as.data.frame(c(aa,bb,cc))
+colnames(dd)=c(paste(treatmentgroup,"-",controlgroup))
+rownames(dd)=c("up","down","total")
+write.table(dd,quote = F,row.names = T,append = T,file = "../Statistics.txt",col.names = T)
+#NormalizeData=as.data.frame(counts(dds_norm,normalize=TRUE)) #打印所有标准化的counts数据
+NormalizeData=subset(as.data.frame(counts(dds_norm,normalize=TRUE)),
+                     select=c(rownames(subset(colData(dds_norm),colData(dds_norm)$condition==treatmentgroup | colData(dds_norm)$condition==controlgroup))))#只打印比对样本的标准化数据
+res_data <- merge(as.data.frame(res),#res or resOrdered
+                  NormalizeData,
+                  by="row.names",
+                  sort=FALSE)
+res_data=subset(res_data, padj!= "NA"&pvalue!= "NA",)
+up_DEG <- subset(res_data, padj < 0.05 & log2FoldChange > 1.5)                            #即FLCA比SLCA上调的基因
+down_DEG <- subset(res_data, padj < 0.05 & log2FoldChange < -1.5)                         #即FLCA比SLCA下调的基因
+write.csv(res_data, paste("step5-",
+                          paste(treatmentgroup, collapse="-"),
+                          "-" ,
+                          paste(controlgroup, collapse="-"), 
+                          "-all.csv", 
+                          sep=""))
+write.csv(up_DEG, paste("step5-", 
+                        paste(treatmentgroup, collapse="-"), 
+                        "-" ,
+                        paste(controlgroup, collapse="-"), 
+                        "-up.csv", 
+                        sep=""))
+write.csv(down_DEG, paste("step5-", 
+                          paste(treatmentgroup, collapse="-"),
+                          "-" ,
+                          paste(controlgroup, collapse="-"),
+                          "-down.csv", 
+                          sep=""))
+
+
+res_data$change = ifelse(res_data$padj < 0.05 & abs(res_data$log2FoldChange) >1.5 , ifelse(res_data$log2FoldChange> 1.5 ,'Up','Down'),'Stable')
+head(res_data)
+#########################################################################################################
+#########################                                              ##################################
+#########################          STEP 6:fcshrink & MA plot           ##################################
+#########################                                              ##################################
+#########################################################################################################
+
+#library(apeglm)
+#resultsNames(dds_norm)
+#res_shrink <- lfcShrink(dds_norm, coef= "condition_Leaf_vs_Flower", type="apeglm")                               #最推荐apeglm算法;根据resultsNames(dds)的第5个维度，coef=5，也可直接condition_LCE_vs_LCA"指定维度
+#pdf("../step6-MAplot.pdf", width = 6, height = 6)
+#plotMA(res_shrink, ylim=c(-10,10), alpha=0.1, main="MA plot: ")
+#dev.off()
+
+#########################################################################################################
+#########################                                              ##################################
+#########################               STEP 7:火山图                  ##################################
+#########################                                              ##################################
+#########################################################################################################
+
+library(ggplot2)
+pdf(paste("step7-", 
+          paste(treatmentgroup, collapse="-"),
+          "-" ,
+          paste(controlgroup, collapse="-"),
+          "-volcano.pdf", sep=""), 
+    width = 6.13, height = 5.18)
+p <- ggplot(
+  # 数据、映射、颜色
+  res_data, aes(x =log2FoldChange , y = -log10(padj), colour=change)) +
+  geom_point(alpha=0.6, size=0.6) +
+  scale_color_manual(values=c("#546de5","black", "#ff4757","#d2dae2"))+
+  # 辅助线
+  geom_vline(xintercept=c(-1.5,1.5),lty=1,col="black",lwd=0.4) +
+  geom_hline(yintercept =1.3,lty=1,col="black",lwd=0.4) +                            #反对数,代表0.05的线,log10(0.05) =-1.3 
+  # 坐标轴
+  labs(x="log2(fold change)",
+       y="-log10 (padj)")+
+  theme_bw()+
+  # 图例
+  theme(plot.title = element_text(hjust = 0.5), 
+        legend.position="right", 
+        legend.title = element_blank()) #主次网格线均为空白
+print(p+xlim(-10, 10)+ylim(0, 10))
+#p+xlim(-10, 10)+ylim(0, 10)
+#p+scale_x_continuous(limits=c(5, 20))+scale_y_continuous(limits=c(0, 50))
+#p + expand_limits(x = c(10, 10), y = c(-10, 30))
+dev.off()
+}}
+
+```
+
+
+##Co-Expression Analysis
+###
+```{r eval=FALSE}
+library(pheatmap)
+RNAexpr <- read.csv('/Users/andy_zhu/Downloads/01-Recent_Tasks/01-AGIS/02-Cangulatus/06-Transcript_Analysis/03-WGCNA/1-CoExpr/CanA_fpkm.csv')
+CYP_lst = read.csv('/Users/andy_zhu/Downloads/01-Recent_Tasks/01-AGIS/02-Cangulatus/06-Transcript_Analysis/03-WGCNA/1-CoExpr/Sesquiterpenon_CYP.csv',header = T,sep=',')
+
+idx = which(RNAexpr$Gene_ID %in% CYP_lst$ID)
+RNAexpr <- RNAexpr[idx,]
+
+RNAexpr$Flower1 <- rowMeans(RNAexpr[ , c(2, 3)], na.rm=TRUE)
+RNAexpr$Flower2 <- rowMeans(RNAexpr[ , c(4, 5)], na.rm=TRUE)
+RNAexpr$Flower3 <- rowMeans(RNAexpr[ , c(6, 7)], na.rm=TRUE)
+#RNAexpr$Flower <- rowMeans(RNAexpr[ , 2:7], na.rm=TRUE)
+
+RNAexpr$Leaf1 <- rowMeans(RNAexpr[ , c(8, 9)], na.rm=TRUE)
+RNAexpr$Leaf2 <- rowMeans(RNAexpr[ , c(10, 11)], na.rm=TRUE)
+RNAexpr$Leaf3 <- rowMeans(RNAexpr[ , c(13, 14)], na.rm=TRUE)
+#RNAexpr$Leaf <- rowMeans(RNAexpr[ , 8:14], na.rm=TRUE)
+
+RNAexpr$Root1 <- rowMeans(RNAexpr[ , c(15, 16)], na.rm=TRUE)
+RNAexpr$Root2 <- RNAexpr[ , 17]
+RNAexpr$Root3 <- rowMeans(RNAexpr[ , c(18, 19)], na.rm=TRUE)
+#RNAexpr$Root <- rowMeans(RNAexpr[ , 15:19], na.rm=TRUE)
+
+#RNAexpr$Stem <- rowMeans(RNAexpr[ , c(20, 21)], na.rm=TRUE)
+
+RNAexpr = RNAexpr[,c(-2:-19)]
+#RNAexpr = RNAexpr[,c(-2:-19)]
+
+rownames(RNAexpr) <- RNAexpr$Gene_ID
+expr_dat <- RNAexpr[,-1]
+
+#bait_gene <- as.numeric(expr_dat['CaA11G00959', ])
+bait_gene <- as.numeric(expr_dat['TPS16', ])
+
+gene_cor <- apply(expr_dat,1,function(x) cor(x,bait_gene,method = 'pearson'))
+
+top_genes_idx <- order(gene_cor, decreasing = TRUE)[1:25]
+
+top_genes <- data.frame(
+  Gene_ID = rownames(expr_dat)[top_genes_idx],
+  Correlation = gene_cor[top_genes_idx]
+)
+
+print(top_genes)
+#write_csv(top_genes,"/Users/andy_zhu/Downloads/01-Recent_Tasks/01-AGIS/02-Cangulatus/06-Transcript_Analysis/03-WGCNA/1-CoExpr/top_cpr_genes.csv")
+top_expr_data <- expr_dat[rownames(expr_dat) %in% top_genes$Gene_ID, ]
+top_expr_data <- top_expr_data[match(top_genes$Gene_ID, rownames(top_expr_data)), ]
+
+z_score_expr <- t(scale(t(log2(top_expr_data + 1))))
+
+pheatmap(z_score_expr, cluster_rows = FALSE, cluster_cols = FALSE, 
+         color = colorRampPalette(c("blue", "white", "red"))(50))
+
+#top_gene_expr <- expr_data[names(top_genes), ]
+
+#################################### for CPR ###################
+RNAexpr <- read.csv('/Users/andy_zhu/Downloads/01-Recent_Tasks/01-AGIS/02-Cangulatus/06-Transcript_Analysis/03-WGCNA/1-CoExpr/CanA_fpkm.csv')
+CPR_lst = read.csv("/Users/andy_zhu/Downloads/01-Recent_Tasks/01-AGIS/02-Cangulatus/06-Transcript_Analysis/03-WGCNA/1-CoExpr/CPR.csv")
+idx = which(RNAexpr$Gene_ID %in% CPR_lst$ID)
+RNAexpr <- RNAexpr[idx,]
+
+RNAexpr$Flower1 <- rowMeans(RNAexpr[ , c(2, 3)], na.rm=TRUE)
+RNAexpr$Flower2 <- rowMeans(RNAexpr[ , c(4, 5)], na.rm=TRUE)
+RNAexpr$Flower3 <- rowMeans(RNAexpr[ , c(6, 7)], na.rm=TRUE)
+
+RNAexpr$Leaf1 <- rowMeans(RNAexpr[ , c(8, 9)], na.rm=TRUE)
+RNAexpr$Leaf2 <- rowMeans(RNAexpr[ , c(10, 11)], na.rm=TRUE)
+RNAexpr$Leaf3 <- rowMeans(RNAexpr[ , c(13, 14)], na.rm=TRUE)
+
+RNAexpr$Root1 <- rowMeans(RNAexpr[ , c(15, 16)], na.rm=TRUE)
+RNAexpr$Root2 <- RNAexpr[ , 17]
+RNAexpr$Root3 <- rowMeans(RNAexpr[ , c(18, 19)], na.rm=TRUE)
+
+
+RNAexpr = RNAexpr[,c(-2:-19)]
+
+rownames(RNAexpr) <- RNAexpr$Gene_ID
+expr_dat <- RNAexpr[,-1]
+
+bait_gene <- as.numeric(expr_dat['CaA11G00959', ])
+
+gene_cor <- apply(expr_dat,1,function(x) cor(x,bait_gene,method = 'pearson'))
+
+top_genes_idx <- order(gene_cor, decreasing = TRUE)[1:25]
+
+top_genes <- data.frame(
+  Gene_ID = rownames(expr_dat)[top_genes_idx],
+  Correlation = gene_cor[top_genes_idx]
+)
+
+print(top_genes)
+
+top_expr_data <- expr_dat[rownames(expr_dat) %in% top_genes$Gene_ID, ]
+top_expr_data <- top_expr_data[match(top_genes$Gene_ID, rownames(top_expr_data)), ]
+z_score_expr <- t(scale(t(log2(top_expr_data + 1))))
+
+pheatmap(z_score_expr, cluster_rows = FALSE, cluster_cols = FALSE, 
+         color = colorRampPalette(c("blue", "white", "red"))(50))
+
+
+#For TPS
+
+RNAexpr <- read.csv('/Users/andy_zhu/Downloads/01-Recent_Tasks/01-AGIS/02-Cangulatus/06-Transcript_Analysis/03-WGCNA/1-CoExpr/CanA_fpkm.csv')
+TPS_lst = read.csv("/Users/andy_zhu/Downloads/01-Recent_Tasks/01-AGIS/02-Cangulatus/06-Transcript_Analysis/03-WGCNA/1-CoExpr/TPS_ID.csv")
+idx = which(RNAexpr$Gene_ID %in% TPS_lst$ID)
+RNAexpr <- RNAexpr[idx,]
+
+RNAexpr$Flower1 <- rowMeans(RNAexpr[ , c(2, 3)], na.rm=TRUE)
+RNAexpr$Flower2 <- rowMeans(RNAexpr[ , c(4, 5)], na.rm=TRUE)
+RNAexpr$Flower3 <- rowMeans(RNAexpr[ , c(6, 7)], na.rm=TRUE)
+
+RNAexpr$Leaf1 <- rowMeans(RNAexpr[ , c(8, 9)], na.rm=TRUE)
+RNAexpr$Leaf2 <- rowMeans(RNAexpr[ , c(10, 11)], na.rm=TRUE)
+RNAexpr$Leaf3 <- rowMeans(RNAexpr[ , c(13, 14)], na.rm=TRUE)
+
+RNAexpr$Root1 <- rowMeans(RNAexpr[ , c(15, 16)], na.rm=TRUE)
+RNAexpr$Root2 <- RNAexpr[ , 17]
+RNAexpr$Root3 <- rowMeans(RNAexpr[ , c(18, 19)], na.rm=TRUE)
+
+
+RNAexpr = RNAexpr[,c(-2:-19)]
+
+rownames(RNAexpr) <- RNAexpr$Gene_ID
+expr_dat <- RNAexpr[,-1]
+
+
+write.csv(expr_dat,"/Users/andy_zhu/Downloads/01-Recent_Tasks/01-AGIS/02-Cangulatus/06-Transcript_Analysis/03-WGCNA/1-CoExpr/TPS_expr.csv",row.names = T)
+library(dplyr)
+library(tidyr)
+
+
+# 1. 读取数据 (使用 check.names = FALSE 保持原始列名，如 Stem_1)
+expr_dat <- read.csv("TPS_expr.csv", row.names = 1, check.names = FALSE)
+library(dplyr)
+library(tidyr)
+#
+
+```
+
+
+##WGCNA
+
+Weighted Gene Co-Expression Network Analysis (WGCNA) has been widely used to create co-expression networks, grouping genes with similar expression pattern in clusters and relating these cluster with phenotypic characterics.
+```{r eval=FALSE}
+# BiocManager::install("WGCNA")
+# BiocManager::install("GO.db")
+# BiocManager::install("impute")
+# BiocManager::install("preprocessCore")
+library(WGCNA)
+library(reshape2)
+options(stringsAsFactors = FALSE) #Setting string not as factor
+enableWGCNAThreads()                                         #Enable multiple process
+
+RNAexpr <- read.csv("/Users/andy_zhu/Downloads/01-Recent_Tasks/01-AGIS/02-Cangulatus/06-Transcript_Analysis/03-WGCNA/CanA_fpkm.csv",sep=",",header = T) #gene expression datafile
+
+RNAexpr$Flower1 <- rowMeans(RNAexpr[ , c(2, 3)], na.rm=TRUE)
+RNAexpr$Flower2 <- rowMeans(RNAexpr[ , c(4, 5)], na.rm=TRUE)
+RNAexpr$Flower3 <- rowMeans(RNAexpr[ , c(6, 7)], na.rm=TRUE)
+
+RNAexpr$Leaf1 <- rowMeans(RNAexpr[ , c(8, 9)], na.rm=TRUE)
+RNAexpr$Leaf2 <- rowMeans(RNAexpr[ , c(10, 11)], na.rm=TRUE)
+RNAexpr$Leaf3 <- rowMeans(RNAexpr[ , c(13, 14)], na.rm=TRUE)
+
+RNAexpr$Root1 <- rowMeans(RNAexpr[ , c(15, 16)], na.rm=TRUE)
+RNAexpr$Root2 <- RNAexpr[ , 17]
+RNAexpr$Root3 <- rowMeans(RNAexpr[ , c(18, 19)], na.rm=TRUE)
+
+RNAexpr = RNAexpr[,c(-2:-19)]
+RNAexpr = RNAexpr[,-7]
+
+rownames(RNAexpr)<-RNAexpr[,1]
+
+#fpkm = RNAexpr[,-1]
+
+#countData<-RNAexpr[,-1]
+
+DEGsexpr <- RNAexpr[RNAexpr$Gene_ID %in% unique_degs, ]
+rownames(DEGsexpr)=DEGsexpr[,1]
+
+fpkm = DEGsexpr[,-1]
+
+samplename <- c(rep("Stem",2),rep("Flower",3),rep("Leaf",2),rep("Root",3))
+samplename
+
+datTraits = data.frame(gsm=names(fpkm),
+                       sampletype=samplename 
+                       )                                     
+datTraits
+
+rownames(datTraits)=datTraits[,1]
+
+RNAseq_voom <- fpkm
+
+dim(RNAseq_voom)
+WGCNA_matrix = t(RNAseq_voom[order(apply(RNAseq_voom,1,mad), decreasing = T)[1:12576],])          
+
+dim(WGCNA_matrix)
+#Data Check before proceeding; if any problematic samples/genes, the matrix is filtered
+datExpr <- WGCNA_matrix                                      # top 29364 mad genes
+datExpr[1:10,1:4] #Sample the first 11 rows (the number of samples)and the first 4 columns to inspect to check
+
+gsg = goodSamplesGenes(datExpr)                             #gsg data check/filteration
+
+if (!gsg$allOK) {
+        datExpr = datExpr[gsg$goodSamples, gsg$goodGenes]
+}
+dim(datExpr)
+
+#####################STEP 2: Check outliar==========================================================
+datExpr_tree<-hclust(dist(datExpr), method = "average") #Group data in a dendogram to check outliers
+par(mar = c(0,5,2,0))
+
+plot(datExpr_tree, main = "Sample clustering to detect outliers", sub="", xlab="", cex.lab = 2,
+     cex.axis = 1, cex.main = 1,cex.lab=1)
+
+#dim(datExpr)
+nGenes = ncol(datExpr)  #the number of genes
+nSamples = nrow(datExpr) #the number of samples
+
+sample_colors <- numbers2colors(as.numeric(factor(datTraits$sampletype)),
+                                colors = c("cyan",
+                                           "red",
+                                           "green3",
+                                           "gray"),
+                                signed = FALSE)                                                  
+                                   
+par(mar = c(1,4,3,1),cex=0.8)
+
+plotDendroAndColors(datExpr_tree, sample_colors,
+                    groupLabels = colnames(sample),
+                    cex.dendroLabels = 0.8,
+                    marAll = c(1, 4, 3, 1),
+                    cex.rowText = 0.01,
+                    main = "Sample dendrogram and sampletype heatmap")         
+
+#ensures that your trait data is correctly aligned with your expression data
+sampleNames = rownames(datExpr)
+traitRows = match(sampleNames, datTraits$gsm)
+rownames(datTraits) = datTraits[traitRows,1] #=datTraits[,1,traitRows]=datTraits[1:16, 1]
+# if (sum(is.na(traitRows)) == 0) {
+#     # Update row names in datTraits to match those in datExpr
+#     rownames(datTraits) = datTraits[traitRows, 1]
+# } else {
+#     warning("Some sample names could not be matched.")
+# }
+
+################STEP 3: Identify optimal soft-thresholding power##################################
+powers = c(c(1:10), seq(from = 20, to=30, by=2))                
+sft = pickSoftThreshold(datExpr,
+                        powerVector = powers,
+                        networkType = "signed", 
+                        RsquaredCut = 0.7,
+                        moreNetworkConcepts = TRUE,
+                        blockSize = 2000,
+                        verbose = 5)
+#sft = pickSoftThreshold(datExpr, RsquaredCut = 0.8,powerVector = powers, verbose = 5) #r>0.9 r>0.85
+sft
+png("step2-beta-value-Fina1.png",width = 800,height = 600)       # Plot the results
+par(mfrow = c(1,2));
+cex1 = 0.9;
+
+#Index the scale free topology adjust as a function of the power soft thresholding.
+p <- plot(sft$fitIndices[,1], -sign(sft$fitIndices[,3])*sft$fitIndices[,2],
+     xlab="Soft Threshold (power)",ylab="Scale Free Topology Model Fit,signed R^2",type="n",
+     main = paste("Scale independence"));                 
+
+text(sft$fitIndices[,1], -sign(sft$fitIndices[,3])*sft$fitIndices[,2],
+     labels=powers,cex=cex1,col="red");
+abline(h=0.70,col="green")      #This line corresponds to use a cut-off R² of h
+
+#Connectivity mean as a function of soft power thresholding
+plot(sft$fitIndices[,1], sft$fitIndices[,5],
+     xlab="Soft Threshold (power)",ylab="Mean Connectivity", type="n",
+     main = paste("Mean connectivity"))                          
+text(sft$fitIndices[,1], sft$fitIndices[,5], labels=powers, cex=cex1,col="red")
+dev.off()
+
+best_beta=sft$powerEstimate
+#blockwiseModules() for construction the TOM (topological overlap matix)
+net = blockwiseModules(
+    datExpr,
+    power = sft$powerEstimate,
+    networkType = "signed",
+    TOMType = "signed",
+    #detectCutHight
+    minModuleSize = 30,
+    maxBlockSize = 6000,
+    #Module Adjustment
+    reassignThreshold = 0,
+    mergeCutHeight = 0.25,
+    numericLabels = TRUE,
+    pamRespectsDendro = FALSE,
+    #Generate TOM file
+    saveTOMs = TRUE,
+    saveTOMFileBase = "Fina1-FPKM-TOM",
+    verbose = 3
+    )
+
+#Convert labels to colors for plotting
+table(net$colors)
+mergedColors = labels2colors(net$colors)                                
+table(mergedColors)
+write.table(table(mergedColors),
+            quote = F,
+            row.names = T,
+            append = F,
+file = "/Users/andy_zhu/Downloads/01-Recent_Tasks/01-AGIS/02-Cangulatus/06-Transcript_Analysis/03-WGCNA/step4-mod_Gene_Number-Fina1.txt",
+      col.names = F)
+#Plot the dendrogram and the module colors undreneath
+p <- plotDendroAndColors(net$dendrograms[[1]], 
+                         mergedColors[net$blockGenes[[1]]],
+                    "Module colors",
+                    dendroLabels = FALSE,
+                    hang = 0.03,
+                    addGuide = TRUE,
+                    guideHang = 0.05)
+
+
+#Relate Module (cluster) Assignments to Treatment Groups.
+design1=model.matrix(~0+datTraits$sampletype)  
+
+colnames(design1)= levels(as.factor(datTraits$sampletype))             
+
+moduleColors <- labels2colors(net$colors)
+#Get Module Eigengenes (hypothetical central gene) per cluster         
+MEs0 = moduleEigengenes(datExpr, moduleColors)$eigengenes 
+#Record modules so similar modules are next to each other
+MEs = orderMEs(MEs0)                                               
+
+ModuleName=unique(substring(colnames(MEs),3))     
+
+#correlation between Module and Traint/Phenotypes
+moduleTraitCor = cor(MEs, design1 , use = "p")
+
+moduleTraitPvalue = corPvalueStudent(moduleTraitCor, nSamples)
+sizeGrWindow(10,6)       
+#Displaying correlations and its p-value
+textMatrix = paste(signif(moduleTraitCor, 2), "\n(",
+                   signif(moduleTraitPvalue, 1), ")", sep = "")
+
+dim(textMatrix) = dim(moduleTraitCor)
+
+pdf("step5-Module-sample-relationships-Fina1.pdf", width = 10, height = 15)          
+
+par(mar = c(6, 10, 1, 1))
+#Displaying the correlation values in a heatmap plot
+labeledHeatmap(Matrix = moduleTraitCor,
+               xLabels =  colnames(design1),
+               yLabels = names(MEs),
+               ySymbols = ModuleName,
+               colorLabels = FALSE,
+               colors = blueWhiteRed(50),
+               textMatrix = textMatrix,
+               setStdMargins = FALSE,
+               cex.text = 0.5,
+               zlim = c(-1,1),
+               main = paste("Module-trait relationships"))
+dev.off()
+
+png("step5-Module-adjacency-heatmap-Fina1.png",height = 800,width = 600)          
+plotEigengeneNetworks(MEs, "Eigengene adjacency heatmap",plotDendrograms = F,
+                      marDendro = c(4,4,2,4))
+dev.off()
+
+setwd("/home/zhuandong/03-Cangulatus/01-Cangulatus_A/03-Transcriptome_analysis/wgcna/Root_green_data")#*
+
+SAMP = as.data.frame(design1[,1])                                           
+
+names(SAMP) = "Root"#*
+module = "brown" #*
+which.module="brown";#*
+
+moduleColors <- labels2colors(net$colors)
+MEs = moduleEigengenes(datExpr, moduleColors)$eigengenes                        
+
+MET = orderMEs(cbind(MEs, SAMP))                                                   
+
+sizeGrWindow(5,7.5);
+par(cex = 0.9)
+pdf(file =paste("step7-",
+                paste(names(SAMP), collapse="-"),
+                "-Eigengene-adjacency-and-dendrogram-Fina1.pdf",
+                sep=""),
+    width = 10, height = 12)                                                       
+plotEigengeneNetworks(MET, "",
+                      marDendro = c(0,4,1,2),
+                      marHeatmap = c(3,4,1,2),
+                      cex.lab = 0.7,
+                      xColorWidth = 1 * strheight("M"),
+                      xLabelsAngle
+                      = 90)
+dev.off()
+sizeGrWindow(6,6);
+par(cex = 1.0)
+png(filename =  paste("step7-",
+                paste(names(SAMP), collapse="-"),
+                "-Eigengene-dendrogram-hclust-Fina1.png",
+                sep=""),
+    width = 800,height = 600)                                                     
+plotEigengeneNetworks(MET, "Eigengene dendrogram",
+                      marDendro = c(0,4,2,0),
+                      plotHeatmaps = FALSE)
+dev.off()
+
+par(cex = 1.0)
+pdf(file =paste("step7-",
+                paste(names(SAMP), collapse="-"),
+                "-Eigengene-adjacency-heatmap-Fina1.pdf",
+                sep=""),
+    width = 10, height = 12)                                                     #»æÖÆÑù±¾»òÐÔ×´¡¢Æ·ÏµÓëÄ£¿éµÄÁÚ½Ó¾ØÕóÈÈÍ¼£¨×¢Òâ£º´ËÍ¼½«¸²¸ÇÊ÷×´Í¼£©
+plotEigengeneNetworks(MET, "Eigengene adjacency heatmap",
+                      marHeatmap = c(3,4,2,2),
+                      plotDendrograms = FALSE,
+                      #cex.lab = 0.7,
+                      cex.lab.x = 0.7,
+                      cex.lab.y = 0.8,
+                      xColorWidth = 1 * strheight("M"),
+                      xLabelsAngle = 90)
+dev.off()
+file.remove('/Users/andy_zhu/Downloads/01-Recent_Tasks/01-AGIS/02-Cangulatus/06-Transcript_Analysis/03-WGCNA/step8-All_Gene_KME-Fina1.txt')
+for(modules in substring(colnames(MEs),3)){
+    if(modules == "grey") next
+    ME=as.data.frame(MEs[,paste("ME",modules,sep="")])
+    colnames(ME)=modules
+    datModExpr=datExpr[,moduleColors==modules]
+    datKME = signedKME(datModExpr, ME)
+    datKME=cbind(datKME,rep(modules,length(datKME)))
+    write.table(datKME,quote = F,row.names = T,append = T,file = "/Users/andy_zhu/Downloads/01-Recent_Tasks/01-AGIS/02-Cangulatus/06-Transcript_Analysis/03-WGCNA/step8-All_Gene_KME-Fina1.txt",col.names = T)
+}
+
+modNames = substring(names(MEs), 3)                                                # Ä£¿éµÄÃû³Æ£¨ÑÕÉ«£©
+geneModuleMembership = as.data.frame(cor(datExpr, MEs, use = "p"))         
+MMPvalue = as.data.frame(corPvalueStudent(as.matrix(geneModuleMembership), nSamples))
+names(geneModuleMembership) = paste("MM", modNames, sep="")
+names(MMPvalue) = paste("p.MM", modNames, sep="")
+geneModuleMembership[1:4,1:4]
+geneTraitSignificance = as.data.frame(cor(datExpr, SAMP, use = "p"))               #
+
+GSPvalue = as.data.frame(corPvalueStudent(as.matrix(geneTraitSignificance), nSamples))
+names(geneTraitSignificance) = paste("GS.", names(SAMP), sep="")
+names(GSPvalue) = paste("p.GS.", names(SAMP), sep="")
+column = match(module, modNames)
+moduleGenes = moduleColors==module
+
+sizeGrWindow(7, 7)
+png(filename =  paste("step8-",
+                      paste(module, collapse="-"),
+                      "-membership-gene_significance-Fina1.png",
+                      sep=""),
+    width = 800,height = 600)
+par(mfrow = c(1,1))
+verboseScatterplot(abs(geneModuleMembership[moduleGenes, column]),
+                   abs(geneTraitSignificance[moduleGenes, 1]),
+                   xlab = paste("Module Membership in", module, "module"),
+                   ylab = paste("Gene significance for ", names(SAMP),sep=""), #*
+                   main = paste("Module membership vs. gene significance\n"),
+                   cex.main = 1.2, cex.lab = 1.2, cex.axis = 1.2, col =module)
+dev.off()
+moduleColors <- labels2colors(net$colors)
+
+#connet=abs(cor(datExpr,use="p"))^sft$powerEstimate  #ÎÞÏòÍøÂçunsigned
+#connet=(1+cor(datExpr,use="p")/2) ^sft$powerEstimate #ÓÐÏòÍøÂçsigined
+#Alldegrees1=intramodularConnectivity(connet, moduleColors)
+Alldegrees1=intramodularConnectivity.fromExpr(datExpr,
+                                              moduleColors,
+                                              networkType = "signed",
+                                              power =sft$powerEstimate,
+                                              ignoreColors = FALSE)
+rownames(Alldegrees1)=colnames(datExpr)
+head(Alldegrees1)
+#file.remove('../step8-All_moduleGene_Connectivity-Fina1.txt')
+write.table(Alldegrees1,quote = F,row.names = T,append = F,file = "/Users/andy_zhu/Downloads/01-Recent_Tasks/01-AGIS/02-Cangulatus/06-Transcript_Analysis/03-WGCNA/step8-All_moduleGene_Connectivity-Fina1.txt",col.names = T)
+GS1 = as.numeric(cor(SAMP,datExpr, use="p"))                            #Ä³¸öÑù±¾ºÍËùÓÐ»ùÒòµÄÏà¹ØÐÔ£¬Ïà¹ØÐÔµÄÕý¸º´óÐ¡±íÊ¾¸ÃÑù±¾ÖÐ»ùÒò±í´ïÁ¿µÄ¸ßµÍ
+GeneSignificance=abs(GS1)                                              #Ö»ÓÃº¯Êý¼ÆËãÏà¹ØÐÔrÖµ£¬Ã»ÓÐÓÃº¯Êý½øÐÐT¼ìÑé¼ÆËãPÖµ£¬»ùÒòÏÔÖøÐÔÖµÎªÏà¹ØÐÔÖµµÄ¾ø¶ÔÖµ£¬PÖµ=»ùÒòÏÔÖøÐÔÖµµÄ¶ÔÊý¡£
+colorlevels=unique(moduleColors)
+sizeGrWindow(9,6)
+png(filename =  paste("step8-",
+                      paste(module, collapse="-"),
+                      "-Gene_Significance-Connectivity-Fina1.png",
+                      sep=""),
+    width = 800,height = 600)
+#pdf("step8-Gene_Significance-Connectivity-Fina1.pdf", width = 10, height = 15)
+par(mfrow=c(2,as.integer(0.5+length(colorlevels)/2)))
+#par(mar = c(4,5,3,1))
+par(mar = c(1,0.1,1,1))
+for (i in c(1:length(colorlevels)))
+{
+    whichmodule=colorlevels[[i]];
+    restrict1 = (moduleColors==whichmodule);
+    verboseScatterplot(Alldegrees1$kWithin[restrict1],
+                       GeneSignificance[restrict1], col=moduleColors[restrict1],
+                       main=whichmodule,
+                       xlab = "Connectivity", ylab = "Gene Significance", abline = TRUE)
+}
+dev.off()
+datKME=signedKME(datExpr, MEs, outputColumnName="MM.")
+head(datKME)                                                                #ÏÔÊ¾Êý¾Ý¿òµÄÇ°¼¸ÐÐ
+FilterGenes1= abs(GS1) > .8 & abs(datKME[,which(names(datKME)== paste("MM.",module,sep=""))])>.9 #*                    #¸ÐÐËÈ¤Ñù±¾ÖÐ±í´ïÁ¿½Ï¸ßµÄ¸ÐÐËÈ¤Ä£¿éµÄHub»ùÒò        #abs(GS1)> .9 ¿ÉÒÔ¸ù¾ÝÊµ¼ÊÇé¿öµ÷Õû²ÎÊý(¹ÙÍøÊÇ>.2£¬Ò»°ãÉèÖÃ>.8)£¬ÒòÎªÊÇÄ³¸öÑù±¾µÄ»ùÒò¸ßÓÚËùÓÐÑù±¾¸Ã»ùÒòµÄÆ½¾ù±í´ïÁ¿(>0 ¾ÍËµÃ÷¸ßÓÚÆ½¾ù±í´ïÁ¿)£¬µ«ÊÇÔÚÄ³¸öÑù±¾ÖÐµÄ±í´ïÁ¿½Ï¸ß²»Ò»¶¨ÊÇhub genes£¬Ö÷Òª¿´KEMÖµ¡£abs(datKME$MM.modname)>.8 ÖÁÉÙ´óÓÚ >0.8 HubGene: |kME| >=ãÐÖµ£¨0.8£©
+table(FilterGenes1)
+FilterGenes2=data.frame(colnames(datExpr),FilterGenes1)
+library(dplyr)
+FilterGenes3=filter(FilterGenes2,FilterGenes1=="TRUE")
+write.table(FilterGenes3,quote = F,row.names = T,append = F,
+            file = paste("step8-",
+                         paste(module, collapse="-"),
+                         "-KME-hub_Gene-Fina1.txt",
+                         sep=""),
+            col.names = F)
+nGenes = ncol(datExpr)
+nSamples = nrow(datExpr)
+geneTree = net$dendrograms[[1]];
+dissTOM = 1-TOMsimilarityFromExpr(datExpr,
+                                  networkType = "signed",
+                                  power = sft$powerEstimate,
+                                  TOMType="signed");
+nSelect = 400
+set.seed(10);                                                           # For reproducibility, we set the random seed
+select = sample(nGenes, size = nSelect);
+selectTOM = dissTOM[select, select];
+selectTree = hclust(as.dist(selectTOM), method = "average")             # Ã»ÓÐ¼òµ¥µÄ·½·¨¿ÉÒÔ½«¾ÛÀàÊ÷ÏÞÖÆÎª»ùÒò×Ó¼¯£¬Òò´ËÎÒÃÇ±ØÐë¶ÔËæ»úµÄ»ùÒò×Ó¼¯ÖØÐÂ¾ÛÀà¡£
+selectColors = moduleColors[select];
+sizeGrWindow(9,9)                                                       # Open a graphical window
+plotDiss = selectTOM^7;                                                 #Í¨¹ý×ª»»ºÍÓÐÐ§µØ¸ü¸ÄdissTOM µÄÃÝ£¬ÀýÈç10£¬Ê¹»æÍ¼ÐÅÏ¢¸ü¼Ó·á¸»£¬Ê¹ÖÐµÈÇ¿¶ÈµÄÁ¬½ÓÔÚÈÈÍ¼ÖÐ¸üÃ÷ÏÔ¡£
+diag(plotDiss) = NA;                                                    # the color palette; setting the diagonal to NA also improves the clarity of the plot
+png("../step9-Select-Network-heatmap-Fina1.png",
+    width = 800,height = 600)
+TOMplot(plotDiss,
+        selectTree,
+        selectColors,
+        main = "Network heatmap plot, selected genes")
+dev.off()
+probes = colnames(datExpr)                                              # probe¾ÍÊÇ»ùÒòÃû
+inModule = (moduleColors==module);
+modProbes = probes[inModule];
+write.table(modProbes,quote = F,
+            row.names = T,
+            append = F,
+            file =paste("step9-",
+                        paste(module, collapse="-"),
+                        "-module_Gene_Name-Fina1.txt",
+                        sep=""),
+            col.names = F)
+TOM = TOMsimilarityFromExpr(datExpr,
+                            networkType = "signed",
+                            power = sft$powerEstimate,
+                            TOMType="signed");                         
+
+#module = "lightgreen";#*                                               # Select module
+probes = colnames(datExpr)                                             # probe¾ÍÊÇ»ùÒòÃû
+inModule = (moduleColors==module);
+modProbes = probes[inModule];                                          #ÌáÈ¡Ö¸¶¨Ä£¿éµÄ»ùÒòÃû
+modTOM = TOM[inModule, inModule];                                      #Ñ¡ÔñÄ£¿éÄÚ»ùÒòÏàÓ¦µÄÍØÆËÖØµþTOMÖµ
+dimnames(modTOM) = list(modProbes, modProbes)
+IMConn <- softConnectivity(datExpr[, modProbes])
+head(IMConn)
+all=data.frame(modProbes,IMConn)
+order=all[order(all[,2],decreasing = T),]
+write.table(order,quote = F,row.names = F,append = F,file = paste("step9-",
+                                         module,
+                                         "-paiming-Fina1.txt",
+                                         sep=""),col.names = F)
+
+vis = exportNetworkToVisANT(modTOM,
+                            file = paste("step9-",
+                                         module,
+                                         "-VisANTInput-Fina1.txt",
+                                         sep=""),
+                            weighted = TRUE,
+                            threshold = 0)                             
+
+cyt = exportNetworkToCytoscape(modTOM,
+                               edgeFile = paste("step9-",
+                                                paste(module, collapse="-"),
+                                                "-CytoscapeInput-edges-Fina1.txt",
+                                                sep=""),
+                               nodeFile = paste("step9-",
+                                                paste(module, collapse="-"),
+                                                "-CytoscapeInput-nodes-Fina1.txt",
+                                                sep=""),
+    weighted = TRUE,
+    threshold = 0.25,
+    nodeNames = modProbes,
+    nodeAttr = moduleColors[inModule]
+);
+
+cyt_data = read.table('/Users/andy_zhu/Downloads/01-Recent_Tasks/01-AGIS/02-Cangulatus/06-Transcript_Analysis/03-WGCNA/step9-brown-CytoscapeInput-edges-Fina1.txt',
+                      header = T,
+                      comment.char = "", 
+                      check.names=F)
+```
+
+
+##Pathway
+```{r}
+rm(list = ls())
+setwd('/Users/andy_zhu/Downloads/01-Recent_Tasks/01-AGIS/02-Cangulatus/05-Transcript_Analysis/Pathway')
+#install.packages("gplots")
+#install.packages("pheatmap")
+library(gplots)
+library(pheatmap)
+
+data <- read.csv("pathway_genes_expr.txt",header = T,sep='\t',quote = '', fill = TRUE)
+data
+#a = c(#"all-tonglu",
+      #"AACT","CMK","DXPR","DXPS","FPPS","GPPS","HDR","HDS","HMGR","HMGS","IDI","MCT","MDS","MVD","MVK","PMVK"
+#      "STPS","B"
+#      )
+#for (NAME in a) {
+
+#data<-read.csv(paste(paste
+#                 (NAME, collapse="."), 
+#                     ".csv", 
+#                     sep=""),
+#               head=T)
+head(data)
+
+row.names(data)<-data[,1]
+row.names(data)
+data<-data[,-1]
+df1 <-as.matrix(data)
+df1
+#dat <- t(df1)
+df2=log2(df1+1)#log??????׼???????Ƿ?ȡ?????ɸ????Լ??????󣬷Ǳ??롣
+#df = df1[apply(df1, 1, function(x) sd(x)!=0),]#ȥ??NA??
+NAME="LH3-3"
+p = pheatmap(data, 
+             #df2,
+         show_rownames = T,
+         show_colnames = T,
+         border="white",# ?߿???ɫ
+         cellwidth = 80,#  ?߿?????
+         cellheight=50,
+         cluster_cols = F,
+         cluster_rows= F, # ?о???
+         #filename='cyan.fpkm6.png',#?????ļ???????
+         filename=paste(paste(NAME, collapse="."), 
+               ".pdf", 
+               sep=""),
+         fontsize_row =10, #???????Ĵ?С
+         fontsize_col = 10,
+         #height=10,  #????ͼƬ?ĸ߶?
+         scale = "row",#?????н???z-score??׼????????ǰ??log??????׼???˿???scale="none",
+         angle_col=0, #?޸ĺ???????????б??
+         legend= T, # ȥ??ͼ??
+         color = colorRampPalette(c("steelblue3", "white", "firebrick3"))(100),#??ͼ??????ɫ
+         clustering_distance_rows = 'euclidean', 
+         #clustering_method = 'complete',
+)#}
+p
+
+```
+
+
+
+```{r}
+rm(list = ls())
+setwd("/Users/andy_zhu/Downloads/01-Recent_Tasks/01-AGIS/02-Cangulatus/04-Evolution_Analysis/01-GeneFam")
+
+#plot genefam on Chrs.
+#par(mfrow=c(2,2),mar=c(4,4,1,1)
+plot(62:100, type = 'n',xlim = c(0,70),ylim = c(0,17500000),las=1, axes=F,xlab = '',ylab = '') 
+#'type': what type of plot should be drawn, 'type='"n"' for no plotting, only axis;axes=F for personalized axis
+axis(2,seq(0,18000000,by=2000000),las=1,col = 'black')  #axis function for personalized axis;side=2,setting y axis
+#chr1
+lines(x=c(0,0),y=c(0,17401811),lwd=2.5,col='black',type='h')  #type=h for histogram
+#chr2
+lines(x=c(3,3),y=c(0,16452266),lwd=2.5)
+#chr3
+lines(x=c(6,6),y=c(0,15164551),lwd=2.5)
+#chr4
+lines(x=c(9,9),y=c(0,15202774),lwd=2.5)
+#chr5
+lines(x=c(12,12),y=c(0,14778003),lwd=2.5)
+#chr6
+lines(x=c(15,15),y=c(0,14664815),lwd=2.5)
+#chr7
+lines(x=c(18,18),y=c(0,14769230),lwd=2.5)
+#chr8
+lines(x=c(21,21),y=c(0,14645955),lwd=2.5)
+#chr9
+lines(x=c(24,24),y=c(0,14326162),lwd=2.5)
+#chr10
+lines(x=c(27,27),y=c(0,14315424),lwd=2.5)
+#chr11
+lines(x=c(30,30),y=c(0,14033347),lwd=2.5)
+#chr12
+lines(x=c(33,33),y=c(0,14208336),lwd=2.5)
+#chr13
+lines(x=c(36,36),y=c(0,13967967),lwd=2.5)
+#chr14
+lines(x=c(39,39),y=c(0,13931248),lwd=2.5)
+#chr15
+lines(x=c(42,42),y=c(0,13998627),lwd=2.5)
+#chr16
+lines(x=c(45,45),y=c(0,13564716),lwd=2.5)
+#chr17
+lines(x=c(48,48),y=c(0,12861505),lwd=2.5)
+#chr18
+lines(x=c(51,51),y=c(0,12734079),lwd=2.5)
+#chr19
+lines(x=c(54,54),y=c(0,12381310),lwd=2.5)
+#chr20
+lines(x=c(57,57),y=c(0,12505263),lwd=2.5)
+#chr21
+lines(x=c(60,60),y=c(0,12244057),lwd=2.5)
+#chr22
+lines(x=c(63,63),y=c(0,11992425),lwd=2.5)
+#chr23
+lines(x=c(66,66),y=c(0,11737041),lwd=2.5)
+
+gene_onbar=read.table('CanA_CYP_TPS_chr_v2.txt',header = 1)
+chr_pos = c()
+#set the horizontal distance between the genes and its chromosome to 0.5
+for (i in c(1:length(gene_onbar$chr))) {
+  chr_pos[i]=gene_onbar$chr[i]*3-3
+}
+
+gene_onbar$chr_pos = chr_pos #add a colummn called chr_pos in gene_onbar
+
+gene_onbar_red = subset(gene_onbar,color=='red')
+gene_onbar_blue = subset(gene_onbar,color=='blue')
+#gene_onbar_black = subset(gene_onbar,color=='black')
+#gene_onbar_green = subset(gene_onbar,color=='green')
+
+#subset function return subsets of vector, matrics or data frames which meet conditions
+
+for (i in c(1:length(gene_onbar_blue$chr))) {
+  lines(x=c(gene_onbar_blue$chr_pos[i],gene_onbar_blue$chr_pos[i]+2),y=c(gene_onbar_blue$gene_pos[i],gene_onbar_blue$gene_pos[i]),
+        col=as.character(gene_onbar_blue$color[i])) #as.character convert a numeric object into a character subject.
+}
+
+for (i in c(1:length(gene_onbar_red$chr))) {
+  lines(x=c(gene_onbar_red$chr_pos[i],gene_onbar_red$chr_pos[i]+2), y=c(gene_onbar_red$gene_pos[i],gene_onbar_red$gene_pos[i]),
+        col=as.character(gene_onbar_red$color[i]))
+}
+
+#for (i in c(1:length(gene_onbar_black$chr))) {
+#  lines(x=c(gene_onbar_black$chr_pos[i],gene_onbar_black$chr_pos[i]+1),y=c(gene_onbar_black$chr_pos[i],gene_onbar_black$chr_pos[i]),
+#        col=as.character(gene_onbar_black$chr_pos[i]))
+#}
+#for (i in c(1:length(gene_onbar_green$chr))) {
+#  lines(x=c(gene_onbar_green$chr_pos[i],gene_onbar_green$chr_pos[i]+1),y=c(gene_onbar_green$chr_pos[i],gene_onbar_green$chr_pos[i]),
+#        col=as.character(gene_onbar_green$chr_pos[i]))
+#}
+#for (i in c(1:length(gene_onbar_orange$chr))) {
+#  lines(x=c(gene_onbar_orange$chr_pos[i],gene_onbar_orange$chr_pos[i]+1),y=c(gene_onbar_orange$chr_pos[i],gene_onbar_orange$chr_pos[i]),
+#        col=as.character(gene_onbar_orange$chr_pos[i]))
+#}
+
+
+```
+
+##Haplotype Visualization
+### Identity
+```{r}
+identity_df <- read.delim(
+  file = '/Users/andy_zhu/Downloads/01-Recent_Tasks/01-AGIS/02-Cangulatus/03-Genome_Basic_Analysis/02-SV/window_100k_identities.tsv',
+  header = T,
+  sep = '\t'
+  )
+
+p <- ggplot(identity_df,aes(x=Identity)) +
+  geom_histogram(binwidth=0.5,
+                 fill='#2E86AB', color='black',
+                 alpha = 0.8) +
+  theme_minimal() +
+  labs(title='Haplotype Identity Distribution',
+       x='Identity (%)',
+       y='No.blocks') +
+  theme_classic(base_size = 6)+
+  theme(
+     axis.line = element_blank(),
+     panel.background = element_blank(),
+     panel.border = element_rect(colour = "black",fill = NA,linewidth = 0.5),
+     axis.text.x = element_text(),
+     panel.grid = element_blank(),
+     plot.title = element_text(hjust = 0.5, vjust = 1, face = "bold")
+   ) +
+  scale_x_continuous(
+    breaks = seq(65, 100, by = 2.5),
+    limits = c(65, 100)) +
+  scale_y_continuous(limits = c(0,800),expand = c(0,0),
+                     breaks = seq(0,800,by=200))
+  
+p
+```
+
+
+###CaTPS16 on Chr20
+```{r}
+library(Gviz)
+library(GenomicRanges)
+options(ucscChromosomeNames=FALSE)
+# ====================================
+# 1. 定义绘图参数和 Seqinfo
+# ====================================
+target_chrom <- "chr20"
+start_coord <- 11323432
+end_coord <- 11330260
+chrom_length <- 12505263
+custom_genome_name <- "Cangulatus" 
+
+# 初始化空的轨迹列表
+all_tracks <- list()
+
+# 创建 Seqinfo 对象 (包含染色体长度信息)
+chrom_seqinfo <- Seqinfo(
+  seqnames = target_chrom,
+  seqlengths = chrom_length,
+  genome = custom_genome_name 
+)
+
+# ====================================
+# 2. Create Gviz Tracks
+# ====================================
+
+# --- Track #1: IdeogramTrack (全长染色体图) ---
+full_chrom_band <- data.frame(
+  chrom = target_chrom,            
+  chromStart = 1,        
+  chromEnd = chrom_length,            
+  name = "chr20_full",
+  gieStain = "gneg" 
+)
+ideo_track <- IdeogramTrack(
+  genome = custom_genome_name, 
+  chromosome = target_chrom,
+  name = " ",
+  bands = full_chrom_band,
+  seqinfo = chrom_seqinfo, 
+  outline = TRUE,
+  fontcolor = "black",
+  cex = 0.8,
+  showTitle = FALSE,
+  showId = FALSE
+)
+all_tracks <- append(all_tracks, ideo_track) 
+
+# --- Track #2: GenomeAxisTrack (坐标轴) ---
+axis_track <- GenomeAxisTrack(
+  name = "Genomic Position (bp)",
+  add53 = TRUE, 
+  col = "black",
+  cex = 0.8
+)
+all_tracks <- append(all_tracks, axis_track) 
+
+# --- Track #3: GeneRegionTrack (基因结构 - Hap1) ---
+# 模拟数据：请替换为您的实际基因注释数据！
+gene_annot_df <- data.frame(
+  chromosome = target_chrom,
+  start = c(11325432, 11326246, 11326570, 11326844,
+            11327149, 11327633, 11328032), 
+  end = c(11325957, 11326494, 11326708, 11327062,
+          11327521,11327906,11328260),   
+  strand = "-", 
+  feature = c("exon", "exon", "exon","exon",
+              "exon","exon","exon"),
+  gene = "CaTPS16",
+  transcript = "CaTPS16.T1",
+  Haplotype = "Hap1" 
+)
+
+gene_track_hap1 <- GeneRegionTrack(
+  gene_annot_df,
+  chromosome = target_chrom,
+  genome = custom_genome_name,
+  seqinfo = chrom_seqinfo, 
+  name = " ",
+  fill = "lightblue",
+  col = NULL,
+  stacking = "squish", 
+  featureAnnotation = "gene"
+)
+all_tracks <- append(all_tracks, gene_track_hap1) 
+
+# --- Track #4: AnnotationTrack (变异位点) ---
+# 模拟数据：请替换为您的实际变异数据！
+variants_df <-read.delim(
+  file = '/Users/andy_zhu/Downloads/01-Recent_Tasks/01-AGIS/02-Cangulatus/03-Genome_Basic_Analysis/02-SV/CaTPS16_gviz_variants.tsv',
+  header = T,
+  sep = '\t'
+  )
+
+variants_df$chromosome[variants_df$chromosome == 'CanChrA20'] <- 'chr20'
+
+
+# 如果堆叠仍有问题，考虑分轨道显示
+snp_track <- AnnotationTrack(
+  variants_df[variants_df$type == "SNP", ],
+  name = "SNP",
+  fill = "green", 
+  lwd = 0,
+  stacking = "squish"
+)
+all_tracks <- append(all_tracks, snp_track)
+
+ins_track <- AnnotationTrack(
+  variants_df[variants_df$type == "INS", ],
+  name = "INS",
+  fill = "red",
+  lwd = 0,
+  stacking = "squish"
+)
+all_tracks <- append(all_tracks, ins_track)
+del_track <- AnnotationTrack(
+  variants_df[variants_df$type == "DEL", ],
+  name = "DEL", 
+  fill = "blue",
+  lwd = 0,
+  stacking = "squish"
+)
+all_tracks <- append(all_tracks, del_track)
+
+
+# ====================================
+# 3. 绘制图形 
+# ====================================
+print(length(all_tracks))  # 检查轨迹列表是否正确
+pdf("/Users/andy_zhu/Downloads/01-Recent_Tasks/01-AGIS/02-Cangulatus/03-Genome_Basic_Analysis/02-SV/Hap_CaTPS16.pdf",
+    width = 3.5,
+    height = 2.5)
+
+plot_title <- paste0("Chr20: ", start_coord, " - ", end_coord)
+
+plotTracks(
+  all_tracks,
+  chromosome = target_chrom,
+  from = start_coord,
+  to = end_coord,
+  main = plot_title,
+  sizes = c(0.5, 1, 1, 1,1,1), 
+  cex.main = 0.7,
+  cex.axis = 0.6
+)
+
+dev.off()
+
+```
+###CaCYY28 on Chr11
+```{r}
+target_chrom <- "chr11"
+start_coord <- 13524744
+end_coord <- 13530703
+chrom_length <- 14033347
+custom_genome_name <- "Cangulatus" 
+
+all_tracks <- list()
+
+chrom_seqinfo <- Seqinfo(
+  seqnames = target_chrom,
+  seqlengths = chrom_length,
+  genome = custom_genome_name 
+)
+
+# --- Track #1: IdeogramTrack (全长染色体图) ---
+full_chrom_band <- data.frame(
+  chrom = target_chrom,            
+  chromStart = 1,        
+  chromEnd = chrom_length,            
+  name = "chr11_full",
+  gieStain = "gneg" 
+)
+
+ideo_track <- IdeogramTrack(
+  genome = custom_genome_name, 
+  chromosome = target_chrom,
+  name = " ",
+  bands = full_chrom_band,
+  seqinfo = chrom_seqinfo, 
+  outline = TRUE,
+  fontcolor = "black",
+  cex = 0.8,
+  showTitle = FALSE,
+  showId = FALSE
+)
+all_tracks <- append(all_tracks, ideo_track) 
+
+# --- Track #2: GenomeAxisTrack (坐标轴) ---
+axis_track <- GenomeAxisTrack(
+  name = "Genomic Position (bp)",
+  add53 = TRUE, 
+  col = "black",
+  cex = 0.8
+)
+all_tracks <- append(all_tracks, axis_track) 
+
+# --- Track #3: GeneRegionTrack (基因结构 - Hap1) ---
+# 模拟数据：请替换为您的实际基因注释数据！
+gene_annot_df <- data.frame(
+  chromosome = target_chrom,
+  start = c(13526744, 13527762), 
+  end = c(13527367, 13528703),   
+  strand = "-", 
+  feature = c("exon", "exon"),
+  gene = "CaCYP28",
+  transcript = "CaCYP28.T1",
+  Haplotype = "Hap1" 
+)
+
+gene_track_hap1 <- GeneRegionTrack(
+  gene_annot_df,
+  chromosome = target_chrom,
+  genome = custom_genome_name,
+  seqinfo = chrom_seqinfo, 
+  name = " ",
+  fill = "lightblue",
+  col = NULL,
+  stacking = "squish", 
+  featureAnnotation = "gene"
+)
+all_tracks <- append(all_tracks, gene_track_hap1) 
+
+# --- Track #4: AnnotationTrack (变异位点) ---
+# 模拟数据：请替换为您的实际变异数据！
+variants_df <-read.delim(
+  file = '/Users/andy_zhu/Downloads/01-Recent_Tasks/01-AGIS/02-Cangulatus/03-Genome_Basic_Analysis/02-SV/CaCYP28_gviz_variants.tsv',
+  header = T,
+  sep = '\t'
+  )
+
+variants_df$chromosome[variants_df$chromosome == 'CanChrA11'] <- 'chr11'
+
+ins_track <- AnnotationTrack(
+  variants_df[variants_df$type == "INS", ],
+  name = "INS",
+  fill = "red",
+  lwd = 0,
+  stacking = "squish"
+)
+all_tracks <- append(all_tracks, ins_track)
+# ====================================
+# 3. 绘制图形 
+# ====================================
+print(length(all_tracks))  # 检查轨迹列表是否正确
+pdf("/Users/andy_zhu/Downloads/01-Recent_Tasks/01-AGIS/02-Cangulatus/03-Genome_Basic_Analysis/02-SV/Hap_CaCYP28.pdf",
+    width = 3.5,
+    height = 2.5)
+
+plot_title <- paste0("Chr11: ", start_coord, " - ", end_coord)
+
+plotTracks(
+  all_tracks,
+  chromosome = target_chrom,
+  from = start_coord,
+  to = end_coord,
+  main = plot_title,
+  sizes = c(0.5, 1, 1,1), 
+  cex.main = 0.7,
+  cex.axis = 0.6
+)
+
+dev.off()
+
+```
+
+```{r}
+library(tidyverse)
+library(patchwork)
+library(cowplot)
+
+syri_dat <- read_tsv('/Users/andy_zhu/Downloads/01-Recent_Tasks/01-AGIS/02-Cangulatus/03-Genome_Basic_Analysis/02-SV/syri.out', col_names=FALSE)
+
+colnames(syri_dat) = c('ref_chr','ref_start','ref_end','ref_strand',
+                       'qry_strand','qry_chr','qry_start','qry_end',
+                        'U_ID','P_ID','type','copy')
+
+syri_dat <- syri_dat %>%
+  mutate(ref_start = as.numeric(ref_start),
+         ref_end = as.numeric(ref_end),
+         qry_start = as.numeric(qry_start),
+         qry_end = as.numeric(qry_end)
+  )
+
+table(syri_dat$type)
+
+fai_dat <- read_tsv('/Users/andy_zhu/Downloads/01-Recent_Tasks/01-AGIS/02-Cangulatus/03-Genome_Basic_Analysis/02-SV/Celastrus_angulatus_A_genome.fasta.fai', 
+                       col_names = c("chr", "length", "offset", "linebases", "linewidth"))
+chr_lengths <- setNames(fai_dat$length, fai_dat$chr)
+
+window_size <- 100000
+target_chromosomes <- fai_dat$chr[1:3]  # 选择前3个染色体用于演示
+
+# 函数：从syri数据计算密度
+calculate_variant_density <- function(syri_df, variant_type, chr_name, chr_length, window_size) {
+  # 筛选特定类型的变异
+  if(variant_type == "SNP") {
+    variant_data <- syri_df %>% filter(type %in% c("SNP", "SYN"))
+    positions <- variant_data$ref_start[variant_data$ref_chr == chr_name]
+  } else if(variant_type == "SV") {
+    variant_data <- syri_df %>% filter(type %in% c("INV", "TRANS", "DUP", "NOTAL"))
+    positions <- variant_data$ref_start[variant_data$ref_chr == chr_name]
+  } else if(variant_type == "INV") {
+    variant_data <- syri_df %>% filter(type == "INV")
+    positions <- variant_data$ref_start[variant_data$ref_chr == chr_name]
+  }
+  
+  if(length(positions) == 0) {
+    return(data.frame(position = numeric(), density = numeric()))
+  }
+  
+  windows <- seq(1, chr_length, by = window_size)
+  densities <- sapply(windows, function(w) {
+    sum(positions >= w & positions < (w + window_size))
+  })
+  
+  data.frame(
+    chr = chr_name,
+    position = windows,
+    density = densities,
+    variant_type = variant_type
+  )
+}
+
+# 为每个染色体生成组合图形
+for(chr in target_chromosomes) {
+  cat("Processing chromosome:", chr, "\n")
+  
+  chr_length <- chr_lengths[chr]
+  if(is.na(chr_length)) next
+  
+  # 计算各种密度
+  snp_density <- calculate_variant_density(syri_dat, "SNP", chr, chr_length, window_size)
+  sv_density <- calculate_variant_density(syri_dat, "SV", chr, chr_length, window_size)
+  inv_density <- calculate_variant_density(syri_dat, "INV", chr, chr_length, window_size)
+  
+  # 获取该染色体的结构变异
+  chr_sv <- syri_dat %>% 
+    filter(ref_chr == chr, type %in% c("INV", "TRANS", "DUP"))
+  
+  # 创建密度图
+  p_density <- ggplot() +
+    # SNP密度
+    geom_area(data = snp_density, aes(x = position, y = density, fill = "SNP"), alpha = 0.6) +
+    # SV密度
+    geom_area(data = sv_density, aes(x = position, y = density, fill = "SV"), alpha = 0.6) +
+    scale_fill_manual(values = c("SNP" = "red", "SV" = "blue")) +
+    labs(title = paste("Variant Density -", chr), y = "Density", fill = "Variant Type") +
+    theme_minimal() +
+    scale_x_continuous(limits = c(1, chr_length)) +
+    theme(axis.title.x = element_blank(),
+          legend.position = "top")
+  
+  # 创建结构变异图（模仿plotsr风格）
+  p_sv <- ggplot() +
+    # 背景网格
+    geom_hline(yintercept = 1:3, color = "grey90", size = 0.2) +
+    # 倒位（橙色）
+    geom_segment(data = chr_sv %>% filter(type == "INV"),
+                 aes(x = ref_start, xend = ref_end, y = 1, yend = 1),
+                 color = "orange", size = 2, lineend = "round") +
+    # 易位（紫色）
+    geom_segment(data = chr_sv %>% filter(type == "TRANS"),
+                 aes(x = ref_start, xend = ref_end, y = 2, yend = 2),
+                 color = "purple", size = 2, lineend = "round") +
+    # 重复（绿色）
+    geom_segment(data = chr_sv %>% filter(type == "DUP"),
+                 aes(x = ref_start, xend = ref_end, y = 3, yend = 3),
+                 color = "green", size = 2, lineend = "round") +
+    # 添加标签
+    geom_text(data = data.frame(y = 1:3, label = c("INV", "TRANS", "DUP"), 
+                               x = rep(100000, 3)),
+              aes(x = x, y = y, label = label), hjust = 0, size = 3) +
+    labs(title = "Structural Variants", x = "Genomic Position (bp)", y = "") +
+    theme_minimal() +
+    scale_x_continuous(limits = c(1, chr_length)) +
+    scale_y_continuous(breaks = 1:3, labels = c("Inversion", "Translocation", "Duplication")) +
+    theme(axis.text.y = element_blank(),
+          axis.ticks.y = element_blank(),
+          panel.grid.major.y = element_blank(),
+          panel.grid.minor.y = element_blank())
+  
+  # 组合图形（类似文献Figure 5A布局）
+  combined_plot <- p_density / p_sv + 
+    plot_layout(heights = c(2, 1)) +
+    plot_annotation(
+      title = paste("Chromosome", chr, "- Allelic Variations"),
+      subtitle = "Integrated view of SNP density and structural variants",
+      theme = theme(plot.title = element_text(size = 14, face = "bold"))
+    )
+  
+  # 保存图形
+  ggsave(paste0("/Users/andy_zhu/Downloads/01-Recent_Tasks/01-AGIS/02-Cangulatus/03-Genome_Basic_Analysis/02-SV/figure5a_style_", chr, ".pdf"), combined_plot, 
+         width = 14, height = 10, dpi = 300)
+  ggsave(paste0("/Users/andy_zhu/Downloads/01-Recent_Tasks/01-AGIS/02-Cangulatus/03-Genome_Basic_Analysis/02-SV/figure5a_style_", chr, ".png"), combined_plot, 
+         width = 14, height = 10, dpi = 300)
+}
+
+# 生成汇总报告
+summary_stats <- syri_dat %>%
+  group_by(ref_chr, type) %>%
+  summarise(count = n(), .groups = 'drop')
+
+write_tsv(summary_stats, "variant_summary_stats.tsv")
+
+cat("=== 统一坐标图形生成完成 ===\n")
+cat("生成的文件:\n")
+cat("- figure5a_style_*.pdf/png: 各染色体的组合图形\n")
+cat("- variant_summary_stats.tsv: 变异统计摘要\n")
+cat("- ", prefix, "_plotsr.pdf: 原始plotsr图形\n")
+
+
+```
+
+
+```{r}
+library(plotsr)
+```
+
+
